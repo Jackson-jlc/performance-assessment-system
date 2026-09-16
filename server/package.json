@@ -1,0 +1,23 @@
+{
+  "name": "jingying-kaohe-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "钻井经营考核系统 · 后端服务（井库/定额库/填报数据落地存储）",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node lib/seed.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie": "^0.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
