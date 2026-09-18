@@ -411,7 +411,7 @@ main.full{padding-bottom:26px}
   <div class="kpis" id="dashKpi" style="margin-top:18px"></div>
 
   <div class="card" style="margin-top:18px">
-    <header><h3>月度完成趋势</h3>
+    <header><h3>指标完成情况</h3>
       <div style="display:flex;gap:8px;align-items:center">
         <div class="seg" id="trendSeg"></div>
         <button class="btn ghost" id="trendView">表格</button>
@@ -425,7 +425,7 @@ main.full{padding-bottom:26px}
   </div>
 
   <div class="card" style="margin-top:18px">
-    <header><h3>主体单位经营指标与基础月奖切块</h3>
+    <header><h3>经营指标与基础月奖</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="eyebrow">口径</span><div class="seg" id="scopeSeg"></div><select id="mktMonth" hidden style="background:var(--surface-2);border:1px solid transparent;border-radius:7px;padding:6px 10px"></select></div>
     </header>
     <div class="body">
@@ -435,7 +435,7 @@ main.full{padding-bottom:26px}
   </div>
 
   <div class="card" style="margin-top:18px">
-    <header><h3>切块奖金使用与节余</h3><span class="eyebrow">全口径</span></header>
+    <header><h3>切块奖金</h3><span class="eyebrow">全口径</span></header>
     <div class="body">
       <div class="scroll"><table id="surplusTbl"></table></div>
       <div id="surplusNote" class="sub" style="margin:10px 0 0"></div>
@@ -2109,23 +2109,22 @@ function renderReport(M){
   $('#formMonthWrap').hidden=isYear;
   const dec=f=>tab.fields.find(x=>x[0]===f)[2];
   const val=(k,f)=> isYear ? gy(k,f) : gv(k,formMonth,f);
-  const rowTotal=k=>tab.fields.reduce((s,f)=>s+val(k,f[0]),0);
 
   let h='<thead><tr><th>主体单位</th>'+tab.fields.map(f=>'<th>'+f[1]+'</th>').join('')+
-        (isYear?'':'<th>本月合计</th><th>填报状态</th>')+'</tr></thead><tbody>';
+        (isYear?'':'<th>填报状态</th>')+'</tr></thead><tbody>';
   UNITS.forEach(u=>{
     h+='<tr><td>'+u.n+'<div class="sub">'+u.note+'</div></td>'+
       tab.fields.map(f=>'<td><input type="number" step="'+(f[2]?0.01:1)+'" data-u="'+u.k+'" data-f="'+f[0]+'" value="'+val(u.k,f[0])+'"></td>').join('');
     if(!isYear){
       const st=DS.status[formMonth][u.k], sd=ST.find(x=>x[0]===st);
-      h+='<td data-sum="'+u.k+'">'+fmt(rowTotal(u.k),0)+'</td><td><button class="pill '+sd[2]+'" data-st="'+u.k+'" style="cursor:pointer;border:0">'+sd[1]+'</button></td>';
+      h+='<td><button class="pill '+sd[2]+'" data-st="'+u.k+'" style="cursor:pointer;border:0">'+sd[1]+'</button></td>';
     }
     h+='</tr>';
   });
   if(!isYear){
     h+='<tr class="total"><td>本月合计</td>'+
       tab.fields.map(f=>'<td data-col="'+f[0]+'">'+fmt(UNITS.reduce((s,u)=>s+val(u.k,f[0]),0),f[2])+'</td>').join('')+
-      '<td data-sum="all">'+fmt(UNITS.reduce((s,u)=>s+rowTotal(u.k),0),0)+'</td><td></td></tr>';
+      '<td></td></tr>';
   }
   $('#formTbl').innerHTML=h+'</tbody>';
 
@@ -2138,11 +2137,8 @@ function renderReport(M){
       renderDashKpi(M2); renderMarket(M2); renderSurplus(M2); renderTrend(M2); renderProgress(M2);
       if(!isYear){
         const T=$('#formTbl');
-        UNITS.forEach(u=>{ const c=T.querySelector('[data-sum="'+u.k+'"]'); if(c) c.textContent=fmt(rowTotal(u.k),0); });
         tab.fields.forEach(fd=>{ const c=T.querySelector('[data-col="'+fd[0]+'"]');
           if(c) c.textContent=fmt(UNITS.reduce((s,u)=>s+val(u.k,fd[0]),0),fd[2]); });
-        const cAll=T.querySelector('[data-sum="all"]');
-        if(cAll) cAll.textContent=fmt(UNITS.reduce((s,u)=>s+rowTotal(u.k),0),0);
       }
     });
   });
@@ -2549,7 +2545,7 @@ async function handleImport(file){
   }catch(e){ impMsg('导入失败：'+((e&&e.message)||'未知错误'),'err'); }
 }
 
-/* ---------- 月度完成趋势 ---------- */
+/* ---------- 指标完成情况 ---------- */
 let trendMetric='foot', trendTable=false;
 const SCALE={foot:{d:10000,u:'万米'},rev:{d:1,u:'万元'},gm:{d:1,u:'万元'}};
 function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v)));
@@ -2601,7 +2597,7 @@ function renderTrend(M){
     bars+='<text x="'+(bx+bw/2)+'" y="'+(y(acc)-6)+'" text-anchor="middle" font-size="10" fill="var(--ink-2)">'+fmt(acc,dec)+'</text>';
     bars+='<text x="'+(bx+bw/2)+'" y="'+(H-B+16)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+t+'</text>';
   });
-  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+I_NAME[trendMetric]+'月度完成趋势，按主体单位堆叠">'+
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+I_NAME[trendMetric]+'指标完成情况，按主体单位堆叠">'+
     g+bars+'<line x1="'+L+'" y1="'+(T+ph)+'" x2="'+(W-R)+'" y2="'+(T+ph)+'" stroke="var(--line)" stroke-width="1.5"/></svg>'+
     '<div class="tip" id="tip" hidden></div>';
 
