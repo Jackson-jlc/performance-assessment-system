@@ -715,7 +715,10 @@ main.full{padding-bottom:26px}
   <div id="perfMsg"></div>
 
   <div class="card">
-    <header><h3>综合排名与兑现</h3><span class="eyebrow" id="perfCount"></span></header>
+    <header><h3>综合排名与兑现</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span class="eyebrow" id="perfCount"></span>
+        <button class="btn ghost" id="perfXls" type="button">导出 Excel</button></div></header>
     <div class="body"><div class="scroll"><table id="teamTbl"></table></div>
       <p class="sub" style="margin:10px 0 0">创收 / 进尺 / 毛益额 / 毛益率排名 / 有效利用率由「队伍信息」按年累自动取数；
         成本考核兑现奖由「兑现登记」按该队当年预兑现额（米费＋工序费）合计自动取数；安全·井控、重大奖罚、党建为下表手动录入。
@@ -724,8 +727,14 @@ main.full{padding-bottom:26px}
   </div>
 
   <div class="card" style="margin-top:14px">
-    <header><h3>手动录入项</h3><span class="eyebrow">安全井控 · 重大奖罚 · 党建</span></header>
-    <div class="body"><div class="scroll"><table id="perfTbl"></table></div>
+    <header><h3>手动录入项</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="eyebrow">安全井控 · 重大奖罚 · 党建</span>
+        <button class="btn ghost" id="perfTplDl" type="button">模板下载</button>
+        <button class="btn" id="perfImpPick" type="button">一键导入</button>
+        <input type="file" id="perfImpFile" accept=".xlsx,.xls,.csv" hidden></div></header>
+    <div class="body"><p class="sub" id="perfImpMsg" style="margin:0 0 10px"></p><div id="perfImpPrev"></div>
+      <div class="scroll"><table id="perfTbl"></table></div>
       <p class="sub" style="margin:10px 0 0">扣分标准：一般事故 C 级每次 −6 分、B 级及以上每次 −20 分；有责溢流每次 −3 分、井涌及以上每次 −10 分。
         重大奖罚由质量安全环保部与工程技术部出具意见，取值 −5～+5 分。党建满分：党支部建设 7 · 意识形态 3 · 党风廉政 3 · 班子建设 2。改动即保存。</p>
     </div>
@@ -2905,14 +2914,9 @@ function perfRows(y){
       gmRate: rev>0?gm/rev:0, util:perfUtil(y,t), man:m};
   });
 }
-function renderTeam(){
-  perfSyncYears();
-  const y=PERF_Y, rows=perfRows(y);
-  const msg=$('#perfMsg');
-  if(msg) msg.innerHTML = rows.length ? '' :
-    '<div class="note" style="margin-bottom:14px">'+y+' 年「队伍信息」里还没有大港油区钻井队的记录，请先在 07 队伍信息中登记。</div>';
-  const cnt=$('#perfCount'); if(cnt) cnt.textContent = y+' 年 · 大港油区 '+rows.length+' 支钻井队';
-
+/* 打分、排名与兑现测算：页面渲染与 Excel 导出共用一套口径 */
+function perfScored(y){
+  const rows=perfRows(y);
   // 毛益率排名（仅毛益率为正的队参与排名奖）
   const byRate=rows.filter(r=>r.gmRate>0).slice().sort((a,b)=>b.gmRate-a.gmRate);
   byRate.forEach((r,i)=>r.gmRank=i+1);
@@ -2933,6 +2937,16 @@ function renderTeam(){
 
   const bEl=$('#teamBase'), base=bEl?(+bEl.value||0):0, n=scored.length;
   scored.forEach((r,i)=>{ r.ratio = n>1 ? 1-0.5*(i/(n-1)) : 1; r.pay = base*r.ratio*r.util; });
+  return {rows:rows, scored:scored, base:base};
+}
+function renderTeam(){
+  perfSyncYears();
+  const y=PERF_Y, M=perfScored(y), rows=M.rows, scored=M.scored;
+  const msg=$('#perfMsg');
+  if(msg) msg.innerHTML = rows.length ? '' :
+    '<div class="note" style="margin-bottom:14px">'+y+' 年「队伍信息」里还没有大港油区钻井队的记录，请先在 07 队伍信息中登记。</div>';
+  const cnt=$('#perfCount'); if(cnt) cnt.textContent = y+' 年 · 大港油区 '+rows.length+' 支钻井队';
+  const xb=$('#perfXls'); if(xb) xb.disabled=!scored.length;
 
   const H=['名次','队号','创收（万元）','创收 25','进尺（米）','进尺 15','成本兑现奖（元）','成本 15',
            '毛益额（万元）','毛益 30','毛益率','排名奖','安全/井控','重大奖罚','党建 15','总分','差额系数','有效利用率','队长兑现'];
@@ -2998,6 +3012,205 @@ function renderPerfScores(){
       const el2=$('#perfTbl').querySelector('tr[data-t="'+t+'"] input[data-f="'+f+'"]');
       if(el2){ el2.focus(); try{ el2.setSelectionRange(+ss,+ss); }catch(e){} } }
   },250);
+}
+
+/* ---------- 综合排名与兑现：Excel 导出 ---------- */
+/* 导出与页面同一套 perfScored 口径；百分比列统一写成百分数值（如 12.34），避免在 Excel 里再乘 100。 */
+function buildPerfXls(y,scored,base){
+  const S1=[], row=(h,c)=>S1.push({h:h,cells:c});
+  const H=['名次','队号','市场创收（万元）','创收 25','钻井进尺（米）','进尺 15',
+    '成本考核兑现奖（元）','成本 15','贡献毛益额（万元）','毛益 30',
+    '毛益率（%）','毛益率名次','排名奖','安全·井控扣分','重大奖罚','党建 15',
+    '总分','差额系数（%）','有效利用率（%）','队长兑现（元）'];
+  const nC=H.length;
+  row(34,[xc('钻井队班子绩效 · 综合排名与兑现（'+y+' 年）','xTitle',nC-1)]);
+  row(26,[xc('适用范围：'+PERF_UNIT+'钻井队 · 队长兑现基数 '+fmt(base,0)+' 元 · 导出于 '+new Date().toLocaleString('zh-CN'),'xSub',nC-1)]);
+  row(30,[xc('计分：经营类单项最高者取满分，其余按「该队值 ÷ 最高值 × 满分」折算，毛益额为负按 0 计；'
+    +'总分 = 经营 85 分 − 安全井控扣分 ＋ 毛益率排名奖 ＋ 重大奖罚 ＋ 党建 15 分；'
+    +'兑现 = 基数 × 差额系数（第一名 100%、末位 50% 线性差额） × 有效钻机利用率。','xNote',nC-1)]);
+  row(32,H.map(h=>xc(h,'xTh')));
+  scored.forEach((r,i)=>{
+    row(20,[xn(i+1,'xNum0'),xc(r.t,'xTd'),
+      xn(r.rev,'xNum0'),xn(+r.sc.rev.toFixed(1),'xNum'),
+      xn(r.foot,'xNum0'),xn(+r.sc.foot.toFixed(1),'xNum'),
+      xn(r.cost,'xNum0'),xn(+r.sc.cost.toFixed(1),'xNum'),
+      xn(r.gm,'xNum0'),xn(+r.sc.gm.toFixed(1),'xNum'),
+      xn(+(r.gmRate*100).toFixed(2),'xNum'), r.gmRank?xn(r.gmRank,'xNum0'):xt('—','xTd'),
+      xn(r.bonus,'xNum0'), xn(-r.ded,r.ded?'xNeg':'xNum0'), xn(r.major,r.major<0?'xNeg':'xNum'),
+      xn(+r.party.toFixed(1),'xNum'), xn(+r.total.toFixed(1),'xNum'),
+      xn(+(r.ratio*100).toFixed(1),'xNum'), xn(+(r.util*100).toFixed(2),'xNum'),
+      xn(Math.round(r.pay),'xNum0')]);
+  });
+  row(24,[xc('合计兑现（队长口径）','xTot',nC-2),
+    xn(Math.round(scored.reduce((a,r)=>a+r.pay,0)),'xTotNum')]);
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n'+
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
+    XLS_STYLES+
+    xlsSheet('综合排名与兑现',[8,14,17,11,16,11,19,11,17,11,13,12,10,14,12,11,11,13,14,16],S1)+
+    '</Workbook>';
+}
+async function perfExportXls(){
+  const b=$('#perfXls'); if(b) b.disabled=true;
+  try{
+    const y=PERF_Y, M=perfScored(y);
+    if(!M.scored.length) throw new Error(y+' 年没有可导出的队伍，请先在 07 队伍信息中登记');
+    const name='班子绩效_综合排名与兑现_'+y+'_'+ymd()+'.xls';
+    await dlXls(name,buildPerfXls(y,M.scored,M.base));
+    perfImpMsg('已导出 '+name+'（'+M.scored.length+' 支队伍）','ok');
+  }catch(e){
+    perfImpMsg((e&&e.code==='declined')?'已取消导出':'导出未完成：'+((e&&e.message)||'未知错误'),'err');
+  }finally{ if(b) b.disabled=false; }
+}
+
+/* ---------- 手动录入项：模板下载 / 一键导入 ---------- */
+/* 表头写成「名称（备注）」，nm() 会去掉括注，因此字段别名只需匹配主体名称 */
+const PERF_TPL_LBL={accC:'一般事故C级（次）',accB:'B级及以上事故（次）',
+  kickOF:'有责溢流（次）',kickBlow:'井涌及以上（次）',major:'重大奖罚（−5～+5 分）',
+  p1:'党支部建设（满分 7）',p2:'意识形态（满分 3）',
+  p3:'党风廉政（满分 3）',p4:'班子建设（满分 2）'};
+const PERF_LBL={}; PERF_MANUAL.forEach(f=>PERF_LBL[f[0]]=f[1]);
+function perfImpMsg(html,cls){
+  const e=$('#perfImpMsg'); if(!e) return;
+  e.innerHTML=html||''; e.className='sub '+(cls==='err'?'neg':(cls==='ok'?'pos':''));
+  if(html&&cls==='ok') setTimeout(()=>{ if(e.innerHTML===html) e.innerHTML=''; },6000);
+}
+/* 录入值纠偏：与页面录入框同一套限制，导入不能绕过 */
+function perfClamp(f,v){
+  const mx=PERF_PARTY_MAX[f];
+  if(mx!=null) return Math.max(0,Math.min(mx,v));
+  if(f==='major') return Math.max(-5,Math.min(5,v));
+  if(PERF_DED[f]!=null) return Math.max(0,Math.round(v));      // 事故与井控按次数，取整且不为负
+  return v;
+}
+function buildPerfTpl(y){
+  const S1=[], row=(h,c)=>S1.push({h:h,cells:c});
+  const teams=perfTeams(y), nC=2+PERF_MANUAL.length;
+  row(34,[xc('班子绩效 · 手动录入项模板（'+y+' 年）','xTitle',nC-1)]);
+  row(38,[xc('说明：表中为系统当前数据（一行 = 一支队伍），只改需要更新的单元格即可；'
+    +'留空的数值单元格视为不修改，不会把原值清零。年份、队号必填，可整行新增队伍。'
+    +'扣分标准：一般事故 C 级每次 −6 分、B 级及以上每次 −20 分；有责溢流每次 −3 分、井涌及以上每次 −10 分。'
+    +'保存为 .xlsx / .xls / .csv 均可导回。','xNote',nC-1)]);
+  row(32,[xc('年份','xTh'),xc('队号','xTh')].concat(PERF_MANUAL.map(f=>xc(PERF_TPL_LBL[f[0]],'xTh'))));
+  (teams.length?teams:['']).forEach(t=>{
+    const m=t?perfOf(y,t):null;
+    row(20,[xn(y,'xYear'),xc(t,'xTd')].concat(
+      PERF_MANUAL.map(f=>xn(m?(+m[f[0]]||0):0, f[2]?'xNum':'xNum0'))));
+  });
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n'+
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
+    XLS_STYLES+
+    xlsSheet('手动录入项',[10,14].concat(PERF_MANUAL.map(f=>Math.max(16,PERF_TPL_LBL[f[0]].length*2))),S1)+
+    '</Workbook>';
+}
+async function perfDownloadTpl(){
+  const b=$('#perfTplDl'); if(b) b.disabled=true;
+  try{
+    const y=PERF_Y, name='班子绩效_手动录入项模板_'+y+'_'+ymd()+'.xls';
+    await dlXls(name,buildPerfTpl(y));
+    perfImpMsg('已下载 '+name+'（含 '+y+' 年当前录入值，改完原样导回）','ok');
+  }catch(e){
+    perfImpMsg((e&&e.code==='declined')?'已取消下载':'模板下载未完成：'+((e&&e.message)||'未知错误'),'err');
+  }finally{ if(b) b.disabled=false; }
+}
+/* 表头归一匹配：字段别名 → 存储键 */
+function perfFieldMap(){
+  const defs={ year:['年份','年','考核年度'], team:['队号','队伍名称','队伍','队名'],
+    accC:['一般事故c级','事故c级','一般事故','c级事故'],
+    accB:['b级及以上事故','b级及以上','事故b级及以上','b级事故'],
+    kickOF:['有责溢流','溢流'],
+    kickBlow:['井涌及以上','井涌'],
+    major:['重大奖罚','奖罚'],
+    p1:['党支部建设'], p2:['意识形态'], p3:['党风廉政'], p4:['班子建设'] };
+  const m={}; Object.keys(defs).forEach(k=>{ defs[k].forEach(a=>{ m[nm(a)]=k; }); m[nm(k)]=k; });
+  return m;
+}
+let PERF_PEND=null;
+function clearPerfImpPreview(){ PERF_PEND=null; const p=$('#perfImpPrev'); if(p) p.innerHTML=''; }
+function parsePerfGrids(grids){
+  const MAP=perfFieldMap(), R={cells:[],rows:0,unknown:[],skipped:0,clamped:0,orphan:[]};
+  const seenHead={}, seenTeam={}, known=new Set(perfTeams(PERF_Y));
+  grids.forEach(g=>{
+    let hi=-1;
+    for(let i=0;i<g.length&&i<25;i++)
+      if((g[i]||[]).some(c=>['队号','队伍名称','队伍','队名'].indexOf(nm(c))>=0)){ hi=i; break; }
+    if(hi<0) return;
+    const head=g[hi]||[], cols={};
+    head.forEach((h,i)=>{
+      const k=MAP[nm(h)];
+      if(k) cols[k]=i;
+      else if(String(h==null?'':h).trim()){ const t=String(h).trim();
+        if(!seenHead[t]){ seenHead[t]=1; R.unknown.push(t); } }
+    });
+    if(cols.team==null) return;
+    for(let r=hi+1;r<g.length;r++){
+      const row=g[r]||[];
+      if(!row.some(c=>String(c==null?'':c).trim())) continue;
+      const team=String(row[cols.team]==null?'':row[cols.team]).trim();
+      if(!team){ R.skipped++; continue; }
+      const yv=cols.year!=null?impNum(row[cols.year]):null;
+      const y=(yv>=2000&&yv<=2100)?yv:PERF_Y;
+      // 预览阶段不建记录，避免取消导入后在 perf.json 里留下空行
+      const cur=(Array.isArray(PERF)?PERF:[]).find(x=>+x.year===y&&x.team===team);
+      if(y===PERF_Y&&!known.has(team)&&!seenTeam[team]){ seenTeam[team]=1; R.orphan.push(team); }
+      R.rows++;
+      PERF_MANUAL.forEach(f=>{
+        const k=f[0]; if(cols[k]==null) return;
+        const raw=impNum(row[cols[k]]);
+        if(raw==null) return;                                   // 留空 = 不修改
+        const v=perfClamp(k,raw);
+        if(Math.abs(v-raw)>1e-9) R.clamped++;
+        const old=cur?(+cur[k]||0):0;
+        if(Math.abs(old-v)>1e-9) R.cells.push({y:y,team:team,f:k,old:old,neo:v});
+      });
+    }
+  });
+  return R;
+}
+function renderPerfImpPreview(fileName){
+  const R=PERF_PEND, host=$('#perfImpPrev'); if(!host||!R) return;
+  const tail=(R.skipped?'<div class="sub" style="margin-top:6px">跳过 '+R.skipped+' 行（队号缺失）</div>':'')+
+    (R.clamped?'<div class="sub" style="margin-top:6px">有 '+R.clamped+' 个值超出取值范围，已按上下限纠偏（党建不超满分、重大奖罚 ±5 分、次数不为负）</div>':'')+
+    (R.orphan.length?'<div class="sub" style="margin-top:6px">'+esc(R.orphan.slice(0,5).join('、'))+
+      (R.orphan.length>5?' 等 '+R.orphan.length+' 支队':'')+'不在 '+PERF_Y+
+      ' 年队伍信息名单中，数值仍会保存，待该队在 07 队伍信息登记后参与排名</div>':'')+
+    (R.unknown.length?'<div class="sub" style="margin-top:6px">未识别的列：'+esc(R.unknown.slice(0,6).join('、'))+
+      (R.unknown.length>6?' 等 '+R.unknown.length+' 列':'')+'</div>':'');
+  if(!R.cells.length){
+    host.innerHTML='<div class="note" style="margin-bottom:12px">已读取 <b>'+esc(fileName)+'</b>，识别 '+R.rows+' 行，'+
+      '<b>与系统现有数据完全一致</b>，无需导入。'+tail+'</div>';
+    return;
+  }
+  const nS=Math.min(R.cells.length,10);
+  const show=R.cells.slice(0,nS).map(c=>'<tr><td>'+esc(c.team)+'</td><td>'+c.y+'</td>'+
+    '<td style="text-align:left">'+esc(PERF_LBL[c.f]||c.f)+'</td>'+
+    '<td class="dim">'+esc(String(c.old))+'</td><td class="pos">'+esc(String(c.neo))+'</td></tr>').join('');
+  const more=R.cells.length-nS;
+  host.innerHTML='<div class="note" style="margin-bottom:12px">已读取 <b>'+esc(fileName)+'</b>：识别 '+R.rows+
+      ' 行，将更新 <b>'+R.cells.length+'</b> 项。确认无误后再导入。'+tail+'</div>'+
+    '<div class="scroll"><table><thead><tr><th>队号</th><th>年度</th><th style="text-align:left">录入项</th><th>现值</th><th>导入值</th></tr></thead>'+
+    '<tbody>'+show+(more>0?'<tr class="total"><td colspan="5" style="text-align:left">另有 '+more+' 项差异未列出</td></tr>':'')+
+    '</tbody></table></div>'+
+    '<div style="display:flex;gap:8px;margin:12px 0">'+
+      '<button class="btn" id="perfImpApply">确认导入 '+R.cells.length+' 项</button>'+
+      '<button class="btn ghost" id="perfImpCancel">取消</button></div>';
+  $('#perfImpApply').onclick=perfApplyImport;
+  $('#perfImpCancel').onclick=()=>{ clearPerfImpPreview(); perfImpMsg('已取消导入'); };
+}
+function perfApplyImport(){
+  const R=PERF_PEND; if(!R) return;
+  const n=R.cells.length;
+  R.cells.forEach(c=>{ perfOf(c.y,c.team)[c.f]=c.neo; });
+  clearPerfImpPreview(); savePerf(); renderTeam();
+  perfImpMsg('已导入 '+n+' 项更新，排名与兑现已重算。','ok');
+}
+async function perfHandleImport(file){
+  if(!file) return;
+  clearPerfImpPreview(); perfImpMsg('正在解析 '+esc(file.name)+' …');
+  try{
+    const R=parsePerfGrids(await gridsOf(file));
+    if(!R.rows) throw new Error('未找到可识别的数据行，请确认表头含「队号」列，或先下载模板');
+    PERF_PEND=R; renderPerfImpPreview(file.name); perfImpMsg('');
+  }catch(e){ perfImpMsg('导入失败：'+((e&&e.message)||'未知错误'),'err'); }
 }
 
 /* ============================ 示例井 ============================ */
@@ -3954,7 +4167,11 @@ function perfSyncYears(){
   if(have.indexOf(PERF_Y)<0) PERF_Y=have[0];
   ys.value=PERF_Y;
 }
-$('#perfYear').addEventListener('change',e=>{ PERF_Y=+e.target.value; renderTeam(); });
+$('#perfYear').addEventListener('change',e=>{ PERF_Y=+e.target.value; clearPerfImpPreview(); perfImpMsg(''); renderTeam(); });
+$('#perfXls').onclick=perfExportXls;
+$('#perfTplDl').onclick=perfDownloadTpl;
+$('#perfImpPick').onclick=()=>$('#perfImpFile').click();
+$('#perfImpFile').addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; perfHandleImport(f); });
 $('#qSearch').addEventListener('input',renderQuota);
 
 /* ---------- 导航图标（SF Symbols 风格线性图标） ---------- */
