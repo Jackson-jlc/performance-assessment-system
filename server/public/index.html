@@ -2036,6 +2036,8 @@ function agg(){
     // 本年切块额：只算 1—11 月，本年 12 月的切块额计入下一考核年度
     const acCur=I_KEY.map(f=>{ let s=0; for(let i=1;i<=11;i++) s+=gv(u.k,i,f); return s; });
     const rateCur=cap12(segRate(acCur,tg));
+    // 切块口径内实际填报到的月份，供表内备注如实标注（与「1—11 月」的制度口径区分开）
+    let lastM=0; for(let i=1;i<=11;i++) if(DS.status[i][u.k]!=='draft'||I_KEY.some(f=>gv(u.k,i,f))) lastM=i;
     const allocCurTeam=base*rateCur, allocCurHq=hqBase*rateCur;
     // 上年 12 月切块额：按上一年度的年度指标与切块基数单独测算，再汇入本年年累
     const py=prevYearParams(u.k);
@@ -2060,7 +2062,7 @@ function agg(){
     const fm=filledMonths(u.k);
     return Object.assign({},u,{tg,ac,r,rate,base,hqBase,allocTeam,allocHq,alloc:allocTeam+allocHq,
       ptg:py.tg, pBase:py.baseTeam, pHqBase:py.baseHq, hasPrevY:py.has,
-      acPrev,acCur,ratePrev,rateCur,
+      acPrev,acCur,ratePrev,rateCur,lastM,
       allocPrev:allocPrevTeam+allocPrevHq, allocCur:allocCurTeam+allocCurHq,
       capBase:base+hqBase+(py.has&&ratePrev?py.baseTeam+py.baseHq:0),
       baseAcc,other,safe,spec,accrued,pay,payBase,paySafe,paySpec,paid,left:accrued-paid,
@@ -2082,6 +2084,7 @@ function agg(){
     ptg, acPrev, acCur, pBase:S2(x=>x.pBase), pHqBase:S2(x=>x.pHqBase),
     hasPrevY:rows.some(x=>x.hasPrevY),
     ratePrev:Math.min(segRate(acPrev,ptg),1.2), rateCur:Math.min(segRate(acCur,tg),1.2),
+    lastM:Math.max.apply(null,rows.map(x=>x.lastM)),
     allocPrev:S2(x=>x.allocPrev), allocCur:S2(x=>x.allocCur), capBase:S2(x=>x.capBase),
     allocTeam:S2(x=>x.allocTeam), allocHq:S2(x=>x.allocHq), alloc:S2(x=>x.alloc),
     baseAcc:S2(x=>x.baseAcc), other:S2(x=>x.other),
@@ -2641,7 +2644,8 @@ function renderMarket(M){
     const alloc=isMonth ? (o.base+o.hqBase)/12*rate : o.alloc;
     // 年累口径下拆出两段：本年（本年参数）＋上年 12 月（上一年度参数）
     const split= !isMonth && o.allocPrev
-      ? '<div class="sub">本年1—11月 '+fmt(o.allocCur,0)+' ＋上年12月 '+fmt(o.allocPrev,0)+'</div>' : '';
+      ? '<div class="sub">'+(o.lastM?'本年1—'+o.lastM+'月':'本年')+' '+fmt(o.allocCur,0)+
+        ' ＋上年12月 '+fmt(o.allocPrev,0)+'</div>' : '';
     return '<tr class="'+(strong?'total':'')+'"><td>'+o.n+(o.note?'<div class="sub">'+o.note+'</div>':'')+'</td>'+cells+
       '<td>'+segBar(bars)+'<strong>'+pct(rate,2)+'</strong></td>'+
       '<td>'+fmt(o.base,0)+'</td><td>'+(o.hqBase?fmt(o.hqBase,0):'<span class="dim">—</span>')+'</td>'+
@@ -2669,8 +2673,9 @@ function renderMarket(M){
         ' 年度的年度指标与切块基数测算，不计入上述完成率。'
       : '<span class="dim">上年 12 月切块额 '+fmt(M.co.allocPrev,0)+' 元；'+
         (YEAR-1)+' 年度参数未填报，暂按本年参数估算。</span>');
-  const allocTip='年累切块额 = 本年切块基数 × 本年 1—11 月完成率 '+pct(M.co.rateCur,2)+
-    '（封顶 120%） ＋ 上年 12 月切块额；'+YEAR+' 年 12 月的切块额计入下一考核年度。';
+  const allocTip='年累切块额 = 本年切块基数 × 本年'+(M.co.lastM?' 1—'+M.co.lastM+' 月':'')+'完成率 '+
+    pct(M.co.rateCur,2)+'（封顶 120%） ＋ 上年 12 月切块额；切块口径取本年 1—11 月，'+
+    YEAR+' 年 12 月的切块额计入下一考核年度。';
   $('#mktNote').innerHTML = isMonth
     ? '月度指标 = 年度指标 ÷ 12；本月切块额 = 切块基数 ÷ 12 × 当月完成率。'+winTip
     : (isYear
