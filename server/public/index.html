@@ -2654,7 +2654,7 @@ function renderMarket(M){
   const hd=isMonth?'月度指标':(isYear?'年度指标':'进度指标');
   const ac=isMonth?'本月完成':'年累';
   const rt=isMonth?'月度完成率':(isYear?'过程指标完成率':'进度完成率');
-  const al=isMonth?'本月切块额（元）':'年累切块额（元）';
+  const al=isMonth?'本月切块额（元）':'年累基础月奖切块额（元）';
   $('#mktTbl').innerHTML=
     '<thead><tr><th rowspan="2">主体单位</th>'+
       '<th colspan="3">进尺（米）· 30%</th><th colspan="3">市场创收（万元）· 40%</th><th colspan="3">贡献毛益额（万元）· 30%</th>'+
@@ -2673,7 +2673,7 @@ function renderMarket(M){
         ' 年度的年度指标与切块基数测算，不计入上述完成率。'
       : '<span class="dim">上年 12 月切块额 '+fmt(M.co.allocPrev,0)+' 元；'+
         (YEAR-1)+' 年度参数未填报，暂按本年参数估算。</span>');
-  const allocTip='年累切块额 = 本年切块基数 × 本年'+(M.co.lastM?' 1—'+M.co.lastM+' 月':'')+'完成率 '+
+  const allocTip='年累基础月奖切块额 = 本年切块基数 × 本年'+(M.co.lastM?' 1—'+M.co.lastM+' 月':'')+'完成率 '+
     pct(M.co.rateCur,2)+'（封顶 120%） ＋ 上年 12 月切块额；切块口径取本年 1—11 月，'+
     YEAR+' 年 12 月的切块额计入下一考核年度。';
   $('#mktNote').innerHTML = isMonth
