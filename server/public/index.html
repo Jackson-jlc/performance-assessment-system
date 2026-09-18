@@ -439,7 +439,7 @@ main.full{padding-bottom:26px}
     <div class="body">
       <div class="scroll"><table id="surplusTbl"></table></div>
       <div id="surplusNote" class="sub" style="margin:10px 0 0"></div>
-      <p class="sub" style="margin:10px 0 0">计提含基础月奖（含机关过程激励、上年度管理指标考核）、安效奖、专项奖（定员与调剂考核、事故复杂、一队多机／跨区域）；节余按第十二条纳入公司管理，为负表示实发已超出计提。</p>
+      <p class="sub" style="margin:10px 0 0">计提含基础月奖（含机关过程激励）、安效奖、专项奖（定员与调剂考核、事故复杂、一队多机／跨区域）；节余按第十二条纳入公司管理，为负表示实发已超出计提。</p>
     </div>
   </div>
 </section>
@@ -1932,7 +1932,12 @@ const I_KEY=['foot','rev','gm'];
 const I_NAME={foot:'进尺',rev:'市场创收',gm:'贡献毛益额'};
 const I_DEC={foot:0,rev:0,gm:0};   // 表内金额一律显示整数，小数留给完成率
 const MONTH_LBL=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-const SEED={"dg":{"m":{"1":{"foot":19778.0,"rev":4404.0,"gm":600.0,"quota":70714.0,"accident":165100.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":1256473.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"2":{"foot":22340.0,"rev":11568.0,"gm":1652.0,"quota":30199.0,"payBaseTeam":1164205.3487,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"3":{"foot":26393.0,"rev":6520.0,"gm":819.0,"quota":55604.0,"accident":183500.0,"payBaseTeam":1047096.3061,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"4":{"foot":20029.0,"rev":6617.0,"gm":1493.2,"quota":108577.0,"payBaseTeam":1147409.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"5":{"foot":23214.0,"rev":10145.0,"gm":1590.11,"quota":73875.44,"payBaseTeam":1455870.8787,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"6":{"foot":7665.0,"rev":6017.0,"gm":335.0,"quota":93373.0,"accident":207500.0,"payBaseTeam":1205730.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"7":{"foot":10569.0,"rev":6181.0,"gm":1757.0,"quota":287687.0,"payBaseTeam":2062105.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"8":{"foot":11681.0,"rev":9672.0,"gm":650.0,"quota":140511.0,"multiRig":279108.0,"hqIncent":0.0,"payBaseTeam":909623.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"9":{"quota":0.0,"accident":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"10":{"quota":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"11":{"quota":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"12":{"quota":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0}},"y":{"tg_foot":180000.0,"tg_rev":75000.0,"tg_gm":8955.0,"baseTeam":12235223.0,"baseHq":0.0,"carryTeam":1994033.9234,"carryHq":0.0,"carryMgmt":0.0,"util":90.0,"utilAvg":85.0}},"xb":{"m":{"1":{"foot":6203.0,"rev":6928.0,"gm":1667.0,"quota":272133.0,"accident":24300.0,"safeTeam":372000.0,"safeHq":47250.0,"payBaseTeam":1440354.0,"payBaseHq":158369.0,"paySafeTeam":448990.0,"paySafeHq":50056.0},"2":{"foot":15464.0,"rev":5853.0,"gm":746.0,"quota":23247.0,"safeTeam":373600.0,"safeHq":47900.0,"payBaseTeam":1432541.0,"payBaseHq":195591.0,"paySafeTeam":316800.0,"paySafeHq":48146.0},"3":{"foot":33313.0,"rev":8215.0,"gm":0.0,"quota":0.0,"accident":324900.0,"safeTeam":334857.1429,"safeHq":44600.0,"payBaseTeam":2053572.0,"payBaseHq":171693.0,"paySafeTeam":376411.0,"paySafeHq":44754.0},"4":{"foot":48244.0,"rev":8080.5148,"gm":627.46,"quota":174155.0,"safeTeam":376567.7419,"safeHq":45800.0,"payBaseTeam":2246642.0,"payBaseHq":205005.0,"paySafeTeam":613780.0,"paySafeHq":52226.0},"5":{"foot":34392.0,"rev":15793.9255,"gm":4158.76,"quota":263022.0,"safeTeam":378960.0,"safeHq":47600.0,"payBaseTeam":2345984.0,"payBaseHq":187365.0,"paySafeTeam":479107.0,"paySafeHq":54831.0},"6":{"foot":20062.0,"rev":10944.0,"gm":2318.0,"quota":114562.0,"accident":350900.0,"safeTeam":378464.5161,"safeHq":47000.0,"payBaseTeam":1884083.0,"payBaseHq":167516.0,"paySafeTeam":361465.0,"paySafeHq":51308.0},"7":{"foot":35335.0,"rev":10194.0,"gm":2132.0,"quota":118586.0,"safeTeam":376800.0,"safeHq":47000.0,"payBaseTeam":2014264.0,"payBaseHq":145377.0,"paySafeTeam":523826.0,"paySafeHq":47458.0},"8":{"foot":28577.0,"rev":8362.0075,"gm":835.0,"quota":164514.0,"multiRig":0.0,"hqIncent":408000.0,"safeTeam":428412.9032,"safeHq":47000.0,"payBaseTeam":2127863.0,"payBaseHq":180416.0,"paySafeTeam":501231.0,"paySafeHq":56829.0},"9":{"quota":0.0,"accident":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"10":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"11":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"12":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0}},"y":{"tg_foot":300000.0,"tg_rev":138000.0,"tg_gm":25944.0,"baseTeam":27884675.0,"baseHq":1670971.65,"carryTeam":2637526.6202,"carryHq":133769.2437,"carryMgmt":0.0,"util":80.0,"utilAvg":85.0}},"cq":{"m":{"1":{"foot":0.0,"rev":0.0,"gm":0.0,"quota":142963.0,"accident":280600.0,"safeTeam":190103.2258,"safeHq":31200.0,"payBaseTeam":-15000.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"2":{"foot":4364.0,"rev":468.0,"gm":0.0,"quota":0.0,"safeTeam":30077.4194,"safeHq":31800.0,"payBaseTeam":-2500.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"3":{"foot":74164.0,"rev":9435.0,"gm":0.0,"quota":0.0,"accident":0.0,"safeTeam":106700.0,"safeHq":31500.0,"payBaseTeam":968790.0,"payBaseHq":113086.0,"paySafeTeam":102970.0,"paySafeHq":38350.0},"4":{"foot":100885.0,"rev":10978.8065,"gm":1050.98,"quota":93198.0,"safeTeam":301458.0645,"safeHq":30900.0,"payBaseTeam":1985084.0,"payBaseHq":110718.0,"paySafeTeam":258169.0,"paySafeHq":39250.0},"5":{"foot":104111.0,"rev":10614.0,"gm":2911.31,"quota":272271.7526,"safeTeam":368466.6667,"safeHq":31500.0,"payBaseTeam":2440396.0,"payBaseHq":240035.0,"paySafeTeam":328984.0,"paySafeHq":39000.0},"6":{"foot":96511.0,"rev":10567.0,"gm":2660.0,"quota":318970.6444,"accident":396900.0,"safeTeam":383432.2581,"safeHq":31500.0,"payBaseTeam":2770204.0,"payBaseHq":113516.0,"paySafeTeam":368795.0,"paySafeHq":39000.0},"7":{"foot":87582.0,"rev":8867.0,"gm":1668.0,"quota":169497.0,"safeTeam":354640.0,"safeHq":31500.0,"payBaseTeam":2703165.0,"payBaseHq":205443.0,"paySafeTeam":355088.0,"paySafeHq":39250.0},"8":{"foot":91679.0,"rev":9606.0,"gm":2040.0,"quota":372833.0,"multiRig":0.0,"hqIncent":320000.0,"safeTeam":369277.4194,"safeHq":31500.0,"payBaseTeam":3396734.0,"payBaseHq":122550.0,"paySafeTeam":352907.0,"paySafeHq":39250.0},"9":{"quota":0.0,"accident":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"10":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"11":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"12":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0}},"y":{"tg_foot":700000.0,"tg_rev":72000.0,"tg_gm":11203.0,"baseTeam":21939775.0,"baseHq":1345890.0,"carryTeam":1079078.5248,"carryHq":38784.2975,"carryMgmt":0.0,"util":88.0,"utilAvg":85.0}}};
+/* 考核年度窗口：上一年 12 月 → 本年 11 月，共 12 个月，每年按此逻辑循环。
+   年累口径（完成率／切块额／计提／实发）一律按此窗口统计；本年 12 月归入下一考核年度。
+   填报表仍按自然月 1—12 月录入，窗口只影响年累汇总。 */
+const WIN_LBL=['上年12月','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月'];
+function winMonths(){ const w=[{y:YEAR-1,m:12}]; for(let i=1;i<=11;i++) w.push({y:YEAR,m:i}); return w; }
+const SEED={"dg":{"m":{"1":{"foot":19778.0,"rev":4404.0,"gm":600.0,"quota":70714.0,"accident":165100.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":1256473.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"2":{"foot":22340.0,"rev":11568.0,"gm":1652.0,"quota":30199.0,"payBaseTeam":1164205.3487,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"3":{"foot":26393.0,"rev":6520.0,"gm":819.0,"quota":55604.0,"accident":183500.0,"payBaseTeam":1047096.3061,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"4":{"foot":20029.0,"rev":6617.0,"gm":1493.2,"quota":108577.0,"payBaseTeam":1147409.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"5":{"foot":23214.0,"rev":10145.0,"gm":1590.11,"quota":73875.44,"payBaseTeam":1455870.8787,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"6":{"foot":7665.0,"rev":6017.0,"gm":335.0,"quota":93373.0,"accident":207500.0,"payBaseTeam":1205730.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"7":{"foot":10569.0,"rev":6181.0,"gm":1757.0,"quota":287687.0,"payBaseTeam":2062105.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"8":{"foot":11681.0,"rev":9672.0,"gm":650.0,"quota":140511.0,"multiRig":279108.0,"hqIncent":0.0,"payBaseTeam":909623.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"9":{"quota":0.0,"accident":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"10":{"quota":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"11":{"quota":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"12":{"quota":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0}},"y":{"tg_foot":180000.0,"tg_rev":75000.0,"tg_gm":8955.0,"baseTeam":12235223.0,"baseHq":0.0}},"xb":{"m":{"1":{"foot":6203.0,"rev":6928.0,"gm":1667.0,"quota":272133.0,"accident":24300.0,"safeTeam":372000.0,"safeHq":47250.0,"payBaseTeam":1440354.0,"payBaseHq":158369.0,"paySafeTeam":448990.0,"paySafeHq":50056.0},"2":{"foot":15464.0,"rev":5853.0,"gm":746.0,"quota":23247.0,"safeTeam":373600.0,"safeHq":47900.0,"payBaseTeam":1432541.0,"payBaseHq":195591.0,"paySafeTeam":316800.0,"paySafeHq":48146.0},"3":{"foot":33313.0,"rev":8215.0,"gm":0.0,"quota":0.0,"accident":324900.0,"safeTeam":334857.1429,"safeHq":44600.0,"payBaseTeam":2053572.0,"payBaseHq":171693.0,"paySafeTeam":376411.0,"paySafeHq":44754.0},"4":{"foot":48244.0,"rev":8080.5148,"gm":627.46,"quota":174155.0,"safeTeam":376567.7419,"safeHq":45800.0,"payBaseTeam":2246642.0,"payBaseHq":205005.0,"paySafeTeam":613780.0,"paySafeHq":52226.0},"5":{"foot":34392.0,"rev":15793.9255,"gm":4158.76,"quota":263022.0,"safeTeam":378960.0,"safeHq":47600.0,"payBaseTeam":2345984.0,"payBaseHq":187365.0,"paySafeTeam":479107.0,"paySafeHq":54831.0},"6":{"foot":20062.0,"rev":10944.0,"gm":2318.0,"quota":114562.0,"accident":350900.0,"safeTeam":378464.5161,"safeHq":47000.0,"payBaseTeam":1884083.0,"payBaseHq":167516.0,"paySafeTeam":361465.0,"paySafeHq":51308.0},"7":{"foot":35335.0,"rev":10194.0,"gm":2132.0,"quota":118586.0,"safeTeam":376800.0,"safeHq":47000.0,"payBaseTeam":2014264.0,"payBaseHq":145377.0,"paySafeTeam":523826.0,"paySafeHq":47458.0},"8":{"foot":28577.0,"rev":8362.0075,"gm":835.0,"quota":164514.0,"multiRig":0.0,"hqIncent":408000.0,"safeTeam":428412.9032,"safeHq":47000.0,"payBaseTeam":2127863.0,"payBaseHq":180416.0,"paySafeTeam":501231.0,"paySafeHq":56829.0},"9":{"quota":0.0,"accident":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"10":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"11":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"12":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0}},"y":{"tg_foot":300000.0,"tg_rev":138000.0,"tg_gm":25944.0,"baseTeam":27884675.0,"baseHq":1670971.65}},"cq":{"m":{"1":{"foot":0.0,"rev":0.0,"gm":0.0,"quota":142963.0,"accident":280600.0,"safeTeam":190103.2258,"safeHq":31200.0,"payBaseTeam":-15000.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"2":{"foot":4364.0,"rev":468.0,"gm":0.0,"quota":0.0,"safeTeam":30077.4194,"safeHq":31800.0,"payBaseTeam":-2500.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"3":{"foot":74164.0,"rev":9435.0,"gm":0.0,"quota":0.0,"accident":0.0,"safeTeam":106700.0,"safeHq":31500.0,"payBaseTeam":968790.0,"payBaseHq":113086.0,"paySafeTeam":102970.0,"paySafeHq":38350.0},"4":{"foot":100885.0,"rev":10978.8065,"gm":1050.98,"quota":93198.0,"safeTeam":301458.0645,"safeHq":30900.0,"payBaseTeam":1985084.0,"payBaseHq":110718.0,"paySafeTeam":258169.0,"paySafeHq":39250.0},"5":{"foot":104111.0,"rev":10614.0,"gm":2911.31,"quota":272271.7526,"safeTeam":368466.6667,"safeHq":31500.0,"payBaseTeam":2440396.0,"payBaseHq":240035.0,"paySafeTeam":328984.0,"paySafeHq":39000.0},"6":{"foot":96511.0,"rev":10567.0,"gm":2660.0,"quota":318970.6444,"accident":396900.0,"safeTeam":383432.2581,"safeHq":31500.0,"payBaseTeam":2770204.0,"payBaseHq":113516.0,"paySafeTeam":368795.0,"paySafeHq":39000.0},"7":{"foot":87582.0,"rev":8867.0,"gm":1668.0,"quota":169497.0,"safeTeam":354640.0,"safeHq":31500.0,"payBaseTeam":2703165.0,"payBaseHq":205443.0,"paySafeTeam":355088.0,"paySafeHq":39250.0},"8":{"foot":91679.0,"rev":9606.0,"gm":2040.0,"quota":372833.0,"multiRig":0.0,"hqIncent":320000.0,"safeTeam":369277.4194,"safeHq":31500.0,"payBaseTeam":3396734.0,"payBaseHq":122550.0,"paySafeTeam":352907.0,"paySafeHq":39250.0},"9":{"quota":0.0,"accident":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"10":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"11":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0},"12":{"quota":0.0,"safeTeam":0.0,"safeHq":0.0,"payBaseTeam":0.0,"payBaseHq":0.0,"paySafeTeam":0.0,"paySafeHq":0.0}},"y":{"tg_foot":700000.0,"tg_rev":72000.0,"tg_gm":11203.0,"baseTeam":21939775.0,"baseHq":1345890.0}}};
 
 /* 填报表定义 */
 const TABS=[
@@ -1943,10 +1948,7 @@ const TABS=[
                                     ['paySafeTeam','安效奖·钻井队',0],['paySafeHq','安效奖·机关',0],
                                     ['paySpecial','专项奖·合计',0]]},
   {k:'year',  n:'年度参数', fields:[['tg_foot','年度进尺指标（米）',0],['tg_rev','年度创收指标（万元）',2],['tg_gm','年度毛益额指标（万元）',2],
-                                    ['baseTeam','切块基数·钻井队（元）',0],['baseHq','切块基数·机关（元）',0],
-                                    ['carryTeam','上年政策1月切块·队（元）',0],['carryHq','上年政策1月切块·机关（元）',0],
-                                    ['carryMgmt','上年度管理指标考核（元）',0],
-                                    ['util','钻机利用率（%）',2],['utilAvg','渤海钻探平均利用率（%）',2]]}
+                                    ['baseTeam','切块基数·钻井队（元）',0],['baseHq','切块基数·机关（元）',0]]}
 ];
 const ST=[['draft','草稿','man'],['submitted','已提交','sys'],['approved','已审核','ai']];
 
@@ -1964,8 +1966,18 @@ function blankDS(useSeed){
   for(let i=1;i<=12;i++){ d.status[i]={}; UNITS.forEach(u=>{ d.status[i][u.k]= (useSeed&&i<=8)?'approved':'draft'; }); }
   return d;
 }
-function loadDSLocal(){ try{ const raw=localStorage.getItem(lsKey()); if(raw){ const p=JSON.parse(raw); if(p&&p.u&&p.status) return p; } }catch(e){} return null; }
+function loadDSYear(y){ try{ const raw=localStorage.getItem('kh-report-'+y); if(raw){ const p=JSON.parse(raw); if(p&&p.u&&p.status) return p; } }catch(e){} return null; }
+function loadDSLocal(){ return loadDSYear(YEAR); }
 let DS=loadDSLocal()||blankDS(YEAR===SEED_YEAR);
+/* 上一年度填报：年累窗口要取其 12 月数据。取不到按 0 计，不影响本年其余月份。 */
+let DSPREV=loadDSYear(YEAR-1);
+async function loadPrevDS(){
+  let d=null;
+  if(BACKEND_MODE){
+    try{ const r=await apiFetch('/api/filings/'+(YEAR-1)); if(r.ok){ const j=await r.json(); if(j&&j.u&&j.status) d=j; } }catch(e){}
+  }
+  DSPREV = d || loadDSYear(YEAR-1);
+}
 /* 切换考核年度：先取后端该年度的填报，没有就回退本机缓存，再没有就建空表 */
 async function switchYear(y){
   if(+y===YEAR) return;
@@ -1975,6 +1987,7 @@ async function switchYear(y){
     try{ const r=await apiFetch('/api/filings/'+YEAR); if(r.ok){ const j=await r.json(); if(j&&j.u&&j.status) d=j; } }catch(e){}
   }
   DS = d || loadDSLocal() || blankDS(YEAR===SEED_YEAR);
+  await loadPrevDS();
   clearImpPreview(); clearClPreview();
   if(formTab==='year') formTab='ind';
   renderTabs(); refreshAll(); renderDashSub();
@@ -1987,12 +2000,21 @@ function saveDS(){ try{ localStorage.setItem(lsKey(),JSON.stringify(DS)); }catch
   if(BACKEND_MODE) apiFetch('/api/filings/'+YEAR,{method:'PUT',body:JSON.stringify(DS)}).catch(()=>{}); }
 const gv=(k,m,f)=>+(DS.u[k].m[m][f]||0);
 const gy=(k,f)=>+(DS.u[k].y[f]||0);
-function filledMonths(k){ let n=0; for(let i=1;i<=12;i++) if(DS.status[i][k]!=='draft'||I_KEY.some(f=>gv(k,i,f))) n++; return n; }
+/* 按窗口取数：本年取 DS，上年 12 月取上一年度填报（缺失即 0） */
+const gvw=(k,w,f)=> w.y===YEAR ? gv(k,w.m,f)
+                  : +((((DSPREV||{}).u||{})[k]||{m:{}}).m[w.m]||{})[f]||0;
+const stw=(k,w)=> w.y===YEAR ? DS.status[w.m][k]
+                : ((((DSPREV||{}).status||{})[w.m])||{})[k]||'draft';
+/* 已填报月数按考核年度窗口计（上年12月→本年11月） */
+function filledMonths(k){ let n=0; winMonths().forEach(w=>{ if(stw(k,w)!=='draft'||I_KEY.some(f=>gvw(k,w,f))) n++; }); return n; }
+/* 自然年 1—12 月的填报进度，仅「填报进度」表使用 */
+function filledCalMonths(k){ let n=0; for(let i=1;i<=12;i++) if(DS.status[i][k]!=='draft'||I_KEY.some(f=>gv(k,i,f))) n++; return n; }
 
 /* ---------- 汇总 ---------- */
 function agg(){
+  const WIN=winMonths();                                        // 上年12月 → 本年11月
   const rows=UNITS.map(u=>{
-    const sum=f=>{ let s=0; for(let i=1;i<=12;i++) s+=gv(u.k,i,f); return s; };
+    const sum=f=>{ let s=0; WIN.forEach(w=>{ s+=gvw(u.k,w,f); }); return s; };
     const ac=I_KEY.map(sum), tg=I_KEY.map(f=>gy(u.k,'tg_'+f));
     const r=tg.map((t,i)=> t ? ac[i]/t : 0);
     const rate=r.reduce((s,v,i)=>s+v*IW[i],0);
@@ -2000,11 +2022,10 @@ function agg(){
     const rateCap=Math.min(rate,1.2);                           // 第八条：完成率超100%按同比例核增，最大不超过120%
     const allocTeam=base*rateCap, allocHq=hqBase*rateCap;
     // 三口径拆分：
-    //   基础月奖 = 上年政策1月切块 + 按完成率核定的切块额 + 机关过程激励 + 上年度管理指标考核
+    //   基础月奖 = 按完成率核定的切块额 + 机关过程激励
     //   安效奖   = 安效奖·钻井队 + 安效奖·机关
     //   专项奖   = 定员与调剂考核 + 事故复杂专项 + 一队多机／跨区域
-    const baseAcc=gy(u.k,'carryTeam')+allocTeam+gy(u.k,'carryHq')+allocHq
-                 +sum('hqIncent')+gy(u.k,'carryMgmt');
+    const baseAcc=allocTeam+allocHq+sum('hqIncent');
     const safe=sum('safeTeam')+sum('safeHq');
     const spec=sum('quota')+sum('accident')+sum('multiRig');
     const other=safe+spec;
@@ -2013,19 +2034,12 @@ function agg(){
                safeHq:sum('paySafeHq'),special:sum('paySpecial')};
     const payBase=pay.baseTeam+pay.baseHq, paySafe=pay.safeTeam+pay.safeHq, paySpec=pay.special;
     const paid=payBase+paySafe+paySpec;
-    // 第八条 50% 保底：发放率<50% 且该单位钻机利用率 > 渤海钻探平均利用率时，按 50% 进度发放
-    const util=gy(u.k,'util'), utilAvg=gy(u.k,'utilAvg');
-    let guardAmt=0, guardNote='';
-    if(accrued>0 && paid/accrued<0.5 && util>0 && utilAvg>0 && util>utilAvg){
-      guardAmt=accrued*0.5;
-      guardNote='发放率'+pct(paid/accrued,1)+'<50%，钻机利用率 '+pct(util,1)+' > 渤海钻探平均 '+pct(utilAvg,1)+'，按 50% 进度保底';
-    }
-    const mm={}; I_KEY.forEach(f=>{ mm[f]=[]; for(let i=1;i<=12;i++) mm[f].push(gv(u.k,i,f)); });
+    const mm={}; I_KEY.forEach(f=>{ mm[f]=WIN.map(w=>gvw(u.k,w,f)); });
     const fm=filledMonths(u.k);
     return Object.assign({},u,{tg,ac,r,rate,base,hqBase,allocTeam,allocHq,alloc:allocTeam+allocHq,
       baseAcc,other,safe,spec,accrued,pay,payBase,paySafe,paySpec,paid,left:accrued-paid,
       leftBase:baseAcc-payBase, leftSafe:safe-paySafe, leftSpec:spec-paySpec,
-      m:mm,fm,util,utilAvg,guardAmt,guardNote,
+      m:mm,fm,
       pr:tg.map((t,i)=> t*fm/12 ? ac[i]/(t*fm/12) : 0)});
   });
   const S2=f=>rows.reduce((s,x)=>s+f(x),0);
@@ -2055,8 +2069,9 @@ function refreshAll(){ const M=agg(); renderDashKpi(M); renderMarket(M); renderS
 let formTab='ind', formMonth=8;
 function renderReport(M){
   const fs=$('#formFoldSub');
+  const calFm=Math.max.apply(null,UNITS.map(u=>filledCalMonths(u.k)));
   if(fs) fs.textContent='当前 '+YEAR+'-'+String(formMonth).padStart(2,'0')+
-    ' · 已填报 '+M.co.fm+' / 12 月 · '+TABS.find(t=>t.k===formTab).n;
+    ' · 已填报 '+calFm+' / 12 月 · '+TABS.find(t=>t.k===formTab).n;
   const tab=TABS.find(t=>t.k===formTab), isYear=formTab==='year';
   $('#formMonthWrap').hidden=isYear;
   const dec=f=>tab.fields.find(x=>x[0]===f)[2];
@@ -2117,9 +2132,11 @@ function renderProgress(M){
          '" style="cursor:pointer;border:'+(cls?'0':'1px solid var(--line)')+';min-width:20px;justify-content:center">'+
          (cls==='ai'?'✓':(cls==='sys'?'○':(cls==='man'?'·':' ')))+'</button></td>';
     }
-    g+='<td>'+M.rows.find(x=>x.k===u.k).fm+' / 12</td></tr>';
+    g+='<td>'+filledCalMonths(u.k)+' / 12</td></tr>';
   });
-  $('#formProgress').innerHTML=g+'</tbody></table>';
+  $('#formProgress').innerHTML=g+'</tbody></table>'+
+    '<p class="sub" style="margin:8px 0 0">1—12 月照常填报；年累考核窗口取 '+(YEAR-1)+
+    ' 年 12 月至 '+YEAR+' 年 11 月，'+YEAR+' 年 12 月计入下一考核年度。</p>';
   $('#formProgress').querySelectorAll('button[data-go-m]').forEach(b=>{
     b.onclick=()=>{ formMonth=+b.dataset.goM; $('#formMonth').value=formMonth; if(formTab==='year') formTab='ind'; renderTabs(); refreshAll(); };
   });
@@ -2511,7 +2528,7 @@ function rtr(x,y,w,h,r){ r=Math.min(r,w/2,Math.max(h,0));
 function renderTrend(M){
   const host=$('#trendWrap'), sc=SCALE[trendMetric], dec=trendMetric==='foot'?1:0;
   const N=Math.max(M.co.fm,1);
-  const lbl=MONTH_LBL.slice(0,N);
+  const lbl=WIN_LBL.slice(0,N);
   const vals=M.rows.map(o=>o.m[trendMetric].slice(0,N).map(v=>v/sc.d));
   const tot=lbl.map((_,i)=>vals.reduce((s,v)=>s+v[i],0));
 
@@ -2596,7 +2613,7 @@ function renderMarket(M){
     return '<tr class="'+(strong?'total':'')+'"><td>'+o.n+(o.note?'<div class="sub">'+o.note+'</div>':'')+'</td>'+cells+
       '<td>'+segBar(bars)+'<strong>'+pct(rate,2)+'</strong></td>'+
       '<td>'+fmt(o.base,0)+'</td><td>'+(o.hqBase?fmt(o.hqBase,0):'<span class="dim">—</span>')+'</td>'+
-      '<td><strong>'+fmt(alloc,0)+'</strong></td><td>'+fmt(o.baseAcc,0)+'</td></tr>';
+      '<td><strong>'+fmt(alloc,0)+'</strong></td></tr>';
   };
   const hd=isMonth?'月度指标':(isYear?'年度指标':'进度指标');
   const ac=isMonth?'本月完成':'年累';
@@ -2606,18 +2623,19 @@ function renderMarket(M){
     '<thead><tr><th rowspan="2">主体单位</th>'+
       '<th colspan="3">进尺（米）· 30%</th><th colspan="3">市场创收（万元）· 40%</th><th colspan="3">贡献毛益额（万元）· 30%</th>'+
       '<th rowspan="2">'+rt+'</th>'+
-      '<th colspan="2">切块基数（元）</th><th rowspan="2">'+al+'</th><th rowspan="2">基础月奖计提累计（元）</th></tr>'+
+      '<th colspan="2">切块基数（元）</th><th rowspan="2">'+al+'</th></tr>'+
     '<tr><th>'+hd+'</th><th>'+ac+'</th><th>比例</th><th>'+hd+'</th><th>'+ac+'</th><th>比例</th><th>'+hd+'</th><th>'+ac+'</th><th>比例</th>'+
       '<th>钻井队</th><th>机关</th></tr></thead><tbody>'+
     M.rows.map(o=>line(o,false)).join('')+line(M.co,true)+'</tbody>';
 
   const ms=$('#mktMonth'); if(ms) ms.hidden=!isMonth;
   const avg=M.rows.reduce((t,o)=>t+o.rate,0)/3;
+  const winTip='年累统计口径：<strong>'+(YEAR-1)+' 年 12 月至 '+YEAR+' 年 11 月</strong>，'+YEAR+' 年 12 月计入下一考核年度。';
   $('#mktNote').innerHTML = isMonth
-    ? '月度指标 = 年度指标 ÷ 12；基础月奖计提累计仍为年累数，按第八条执行。'
+    ? '月度指标 = 年度指标 ÷ 12；本月切块额 = 切块基数 ÷ 12 × 当月完成率。'+winTip
     : (isYear
-      ? '年累切块额 = 切块基数 × 完成率；公司合计按<strong>汇总口径</strong> '+pct(M.co.rate,2)+'（三市场平均为 '+pct(avg,2)+'）。'
-      : '进度指标 = 年度指标 × 已填报月数 ÷ 12（当前 '+M.co.fm+' 个月）。');
+      ? '年累切块额 = 切块基数 × 完成率；公司合计按<strong>汇总口径</strong> '+pct(M.co.rate,2)+'（三市场平均为 '+pct(avg,2)+'）。'+winTip
+      : '进度指标 = 年度指标 × 已填报月数 ÷ 12（当前 '+M.co.fm+' 个月）。'+winTip);
 }
 
 /* ---------- 切块使用与节余 / 实发构成 ---------- */
@@ -2630,10 +2648,8 @@ function renderSurplus(M){
   $('#surplusTbl').innerHTML='<thead><tr><th>主体单位</th><th>过程完成累计</th><th>实发累计</th><th>节余</th><th>兑现率</th></tr></thead><tbody>'+
     M.rows.map(o=>row(o,false)).join('')+row(M.co,true)+'</tbody>';
 
-  const guards=M.rows.filter(o=>o.guardAmt>0);
-  $('#surplusNote').innerHTML = guards.length
-    ? guards.map(o=>'<div><strong>'+o.n+'</strong>：'+o.guardNote+'，保底应发 ≥ '+fmt(o.guardAmt,0)+' 元（请核对实发是否达此额度）</div>').join('')
-    : '<span class="dim">基础月奖保底规则：发放率不足 50% 时，若该主体单位钻机利用率高于渤海钻探平均利用率，按 50% 进度发放（钻机利用率在「数据填报 › 年度参数」中录入）。当前各单位均未触发。</span>';
+  $('#surplusNote').innerHTML='<span class="dim">计提与实发均按考核年度窗口累计：'+(YEAR-1)+
+    ' 年 12 月至 '+YEAR+' 年 11 月；'+YEAR+' 年 12 月计入下一考核年度。</span>';
 
 }
 
@@ -2645,13 +2661,14 @@ function kpiBd(unit, items){
 }
 function renderDashKpi(M){
   const c=M.co, w=v=>fmt(v/10000,0);           // 金额一律折万元取整，小数留给比率
-  // 卡片按三口径列示：基础月奖（含机关过程激励、上年度管理指标考核）／安效奖／专项奖
+  // 卡片按三口径列示：基础月奖（含机关过程激励）／安效奖／专项奖
   const B=['基础月奖','安效奖','专项奖'];
   const cards=[
     ['公司过程指标完成率', pct(c.rate,2), '进尺 · 市场创收 · 贡献毛益额 按 30／40／30 加权',
       '完成率', [[I_NAME.foot,pct(c.r[0],2)],[I_NAME.rev,pct(c.r[1],2)],[I_NAME.gm,pct(c.r[2],2)]]],
     ['年累切块额', w(c.accrued)+KPI_UNIT,
-      '基础月奖切块基数 '+fmt((c.base+c.hqBase)/10000,0)+' 万元 · 计提率 '+pct((c.base+c.hqBase)?c.alloc/(c.base+c.hqBase):0,2),
+      '基础月奖切块基数 '+fmt((c.base+c.hqBase)/10000,0)+' 万元 · 计提率 '+pct((c.base+c.hqBase)?c.alloc/(c.base+c.hqBase):0,2)+
+      ' · 口径 '+(YEAR-1)+'年12月—'+YEAR+'年11月',
       '万元', [[B[0],w(c.baseAcc)],[B[1],w(c.safe)],[B[2],w(c.spec)]]],
     ['年累实发额', w(c.paid)+KPI_UNIT,
       '全口径应计提 '+w(c.accrued)+' 万元 · 兑现率 '+pct(c.accrued?c.paid/c.accrued:0,2),
@@ -3838,7 +3855,7 @@ function renderTabs(){
   $('#trendView').onclick=()=>{ trendTable=!trendTable; $('#trendView').textContent=trendTable?'图表':'表格'; renderTrend(agg()); };
 
   const mms=$('#mktMonth');
-  MONTH_LBL.forEach((l,i)=>{ const o=el('option',null,l); o.value=i+1; mms.appendChild(o); });
+  WIN_LBL.forEach((l,i)=>{ const o=el('option',null,l); o.value=i+1; mms.appendChild(o); });
   mms.value=mktMonth;
   mms.addEventListener('change',e=>{ mktMonth=+e.target.value; renderMarket(agg()); });
   const ss=$('#scopeSeg');
@@ -4106,10 +4123,11 @@ async function hydrateFromBackend(){
   const ok=await ensureBackendAuth();
   if(!ok) return;
   try{
-    const [wr,qr,fr,pr,tr,pf]=await Promise.all([apiFetch('/api/wells'),apiFetch('/api/quota'),apiFetch('/api/filings/'+YEAR),apiFetch('/api/pre'),apiFetch('/api/teaminfo'),apiFetch('/api/perf')]);
+    const [wr,qr,fr,fpr,pr,tr,pf]=await Promise.all([apiFetch('/api/wells'),apiFetch('/api/quota'),apiFetch('/api/filings/'+YEAR),apiFetch('/api/filings/'+(YEAR-1)),apiFetch('/api/pre'),apiFetch('/api/teaminfo'),apiFetch('/api/perf')]);
     if(wr.ok){ const w=await wr.json(); if(Array.isArray(w)) WELLS=w; } // 服务器是权威源，哪怕返回空数组也如实采用（覆盖启动时可能本地写入的示例井）
     if(qr.ok){ const q=await qr.json(); if(q && Array.isArray(q.blocks)) Object.assign(Q,q); }
     if(fr.ok){ const f=await fr.json(); if(f && f.u && f.status) DS=f; }
+    if(fpr.ok){ const f=await fpr.json(); if(f && f.u && f.status) DSPREV=f; }   // 上一年度：只取 12 月进入本年累计窗口
     if(pr.ok){ const pp=await pr.json(); if(Array.isArray(pp)) PRES=pp; }   // null 表示服务器尚无台账，交给 migratePre 建账
     if(tr.ok){ const tt=await tr.json(); if(Array.isArray(tt)) TINFO=tt; }  // null 表示服务器尚无队伍台账，交给 boot 初始化名单
     if(pf.ok){ const pp=await pf.json(); if(Array.isArray(pp)) PERF=pp; }    // 班子绩效手动录入项
