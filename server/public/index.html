@@ -2422,6 +2422,8 @@ async function downloadTpl(){
    切块考核的经营指标与奖金计提，全部由队伍台账按「主体单位 × 年月」汇总得出，
    不再手工誊抄。采集一律先出差异预览、确认后才写入，避免覆盖已审核的填报。 */
 const SAFE_RATE={ team:{hc:800,sc:400}, hq:{hc:600,sc:300} };   // 安效奖标准，元/人·月
+/* 钻井队安效奖按钻机利用率折算（机关无钻机，不折算）：利用率按台账「钻机利用率（%）」取值 */
+const tiUtil=r=>Math.max(0,(+r.util||0)/100);
 const TI_U2K={'大港油区':'dg','西北':'xb','长庆':'cq'};
 const tiIsHq=t=>/机关$/.test(String(t==null?'':t));              // 西北机关 / 长庆机关 走机关口径，其余按钻井队
 const CL_GROUPS=[
@@ -2437,8 +2439,9 @@ function tiCollect(m){
     if(+r.year!==YEAR||+r.month!==m) return;
     const o=out[TI_U2K[r.unit]]; if(!o) return;
     const hc=(+r.hc||0)+(+r.hcTreat||0), sc=+r.sc||0, isHq=tiIsHq(r.team), R=isHq?SAFE_RATE.hq:SAFE_RATE.team;
+    const k=isHq?1:tiUtil(r);                                    // 钻井队按钻机利用率折算，机关不折算
     o.foot+=+r.foot||0; o.rev+=+r.rev||0; o.gm+=+r.gm||0;
-    o[isHq?'safeHq':'safeTeam']+=hc*R.hc+sc*R.sc;
+    o[isHq?'safeHq':'safeTeam']+=(hc*R.hc+sc*R.sc)*k;
     o.quota+=+r.staffAdj||0; o.accident+=+r.accSpec||0;
     o.multiRig+=+r.multiRig||0; o.hqIncent+=+r.hqIncent||0;
   });
@@ -2464,8 +2467,8 @@ function renderClPreview(){
   const chk=CL_GROUPS.map(g=>'<label style="display:inline-flex;gap:6px;align-items:center;margin-right:16px;cursor:pointer">'+
       '<input type="checkbox" data-g="'+g.k+'"'+(P.groups.indexOf(g.k)>=0?' checked':'')+'>'+g.n+
       '<span class="sub">（'+g.fields.map(f=>CL_LBL[f]).join(' · ')+'）</span></label>').join('');
-  const rule='<div class="sub" style="margin-top:8px">安效奖口径：钻井队 =（合同化+合同化待遇）×800 +（市场化+第三方）×400；'+
-    '机关 =（合同化+合同化待遇）×600 +（市场化+第三方）×300，适用于西北机关、长庆机关。</div>';
+  const rule='<div class="sub" style="margin-top:8px">安效奖口径：钻井队 =（合同化+合同化待遇）×800×钻机利用率 +（市场化+第三方）×400×钻机利用率；'+
+    '机关 =（合同化+合同化待遇）×600 +（市场化+第三方）×300（机关无钻机，不按利用率折算），适用于西北机关、长庆机关。</div>';
   const n=Math.min(d.length,12);
   const body=d.slice(0,n).map(x=>'<tr><td>'+YEAR+'-'+String(x.m).padStart(2,'0')+'</td><td>'+esc(x.un)+'</td>'+
       '<td style="text-align:left">'+esc(CL_LBL[x.f]||x.f)+'</td>'+
