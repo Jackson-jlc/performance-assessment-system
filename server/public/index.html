@@ -187,7 +187,7 @@ tbody tr{transition:background .14s ease}
 tbody tr:hover{background:var(--fill)}
 tr.grp td{background:var(--surface-2);font-weight:590}
 tr.total td{border-top:1px solid var(--line);border-bottom:0;font-weight:600;font-size:13px;padding-top:11px}
-/* 队伍信息：经营/用工 与 专项考核金额 两组之间的分隔线（13 个数字列，靠一条细线分区读起来才不费劲） */
+/* 队伍信息：经营/用工 ｜ 专项考核金额 ｜ 奖金实发 三组之间的分隔线（17 个数字列，靠细线分区读起来才不费劲） */
 #tiTbl th.tiSep,#tiTbl td.tiSep{border-left:1px solid var(--line);padding-left:14px}
 .sub{color:var(--muted);font-size:11px;font-weight:400;letter-spacing:0}
 td select{width:calc(100% + 15px);margin:0 -7px 0 -8px;min-width:80px;background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:4px 7px;font-size:12px}
@@ -2054,9 +2054,9 @@ const TABS=[
   {k:'ind',   n:'经营指标', fields:[['foot','进尺（米）',0],['rev','市场创收（万元）',2],['gm','贡献毛益额（万元）',2]]},
   {k:'accrue',n:'奖金计提', fields:[['safeTeam','安效奖·钻井队',0],['safeHq','安效奖·机关',0],['quota','定员与调剂考核',0],
                                     ['accident','事故复杂专项',0],['multiRig','一队多机／跨区域',0],['hqIncent','机关过程激励',0]]},
+  /* 专项奖不再单列实发：定员与调剂考核／事故复杂／一队多机按计提即实发，见 agg() */
   {k:'pay',   n:'奖金实发', fields:[['payBaseTeam','基础月奖·钻井队',0],['payBaseHq','基础月奖·机关',0],
-                                    ['paySafeTeam','安效奖·钻井队',0],['paySafeHq','安效奖·机关',0],
-                                    ['paySpecial','专项奖·合计',0]]},
+                                    ['paySafeTeam','安效奖·钻井队',0],['paySafeHq','安效奖·机关',0]]},
   {k:'year',  n:'年度参数', fields:[['tg_foot','年度进尺指标（米）',0],['tg_rev','年度创收指标（万元）',2],['tg_gm','年度毛益额指标（万元）',2],
                                     ['baseTeam','切块基数·钻井队（元）',0],['baseHq','切块基数·机关（元）',0]]}
 ];
@@ -2154,8 +2154,9 @@ function agg(){
     const spec=sum('quota')+sum('accident')+sum('multiRig');
     const other=safe+spec;
     const accrued=baseAcc+safe+spec;
+    // 专项奖（定员与调剂考核／事故复杂／一队多机）计提即实发，不再单独填报，故实发取计提额、节余恒为 0
     const pay={baseTeam:sum('payBaseTeam'),baseHq:sum('payBaseHq'),safeTeam:sum('paySafeTeam'),
-               safeHq:sum('paySafeHq'),special:sum('paySpecial')};
+               safeHq:sum('paySafeHq'),special:spec};
     const payBase=pay.baseTeam+pay.baseHq, paySafe=pay.safeTeam+pay.safeHq, paySpec=pay.special;
     const paid=payBase+paySafe+paySpec;
     const mm={}; I_KEY.forEach(f=>{ mm[f]=MONTH_LBL.map((x,i)=>gv(u.k,i+1,f)); });
@@ -2284,7 +2285,7 @@ const IMP_M=[['foot','进尺（米）'],['rev','市场创收（万元）'],['gm'
   ['safeTeam','计提·安效奖·钻井队'],['safeHq','计提·安效奖·机关'],['quota','计提·定员与调剂考核'],
   ['accident','计提·事故复杂专项'],['multiRig','计提·一队多机／跨区域'],['hqIncent','计提·机关过程激励'],
   ['payBaseTeam','实发·基础月奖·钻井队'],['payBaseHq','实发·基础月奖·机关'],
-  ['paySafeTeam','实发·安效奖·钻井队'],['paySafeHq','实发·安效奖·机关'],['paySpecial','实发·专项奖·合计']];
+  ['paySafeTeam','实发·安效奖·钻井队'],['paySafeHq','实发·安效奖·机关']];
 const IMP_Y=TABS[3].fields.map(f=>[f[0],f[1]]);
 const IMP_DEC={}; TABS.forEach(t=>t.fields.forEach(f=>IMP_DEC[f[0]]=f[2]));
 const IMP_LBL={}; IMP_M.concat(IMP_Y).forEach(f=>IMP_LBL[f[0]]=f[1]);
@@ -2528,13 +2529,16 @@ const TI_U2K={'大港油区':'dg','西北':'xb','长庆':'cq'};
 const tiIsHq=t=>/机关$/.test(String(t==null?'':t));              // 西北机关 / 长庆机关 走机关口径，其余按钻井队
 const CL_GROUPS=[
   {k:'ind',   n:'经营指标', fields:['foot','rev','gm']},
-  {k:'accrue',n:'奖金计提', fields:['safeTeam','safeHq','quota','accident','multiRig','hqIncent']}
+  {k:'accrue',n:'奖金计提', fields:['safeTeam','safeHq','quota','accident','multiRig','hqIncent']},
+  /* 实发四项在台账里已按钻井队／机关分列，直接按主体单位求和，不再换算 */
+  {k:'pay',   n:'奖金实发', fields:['payBaseTeam','payBaseHq','paySafeTeam','paySafeHq']}
 ];
-const CL_LBL={}; TABS.forEach(t=>t.fields.forEach(f=>CL_LBL[f[0]]=f[1]));
+const CL_LBL=IMP_LBL;   // 复用导入模板列名：带「计提·／实发·」前缀，预览里不会与同名计提项混淆
 const CL_DEC={}; TABS.forEach(t=>t.fields.forEach(f=>CL_DEC[f[0]]=f[2]));
 /* 汇总某个月的队伍台账 → 三个主体单位的切块字段 */
 function tiCollect(m){
-  const out={}; UNITS.forEach(u=>out[u.k]={foot:0,rev:0,gm:0,safeTeam:0,safeHq:0,quota:0,accident:0,multiRig:0,hqIncent:0});
+  const out={}; UNITS.forEach(u=>out[u.k]={foot:0,rev:0,gm:0,safeTeam:0,safeHq:0,quota:0,accident:0,multiRig:0,hqIncent:0,
+    payBaseTeam:0,payBaseHq:0,paySafeTeam:0,paySafeHq:0});
   (Array.isArray(TINFO)?TINFO:[]).forEach(r=>{
     if(+r.year!==YEAR||+r.month!==m) return;
     const o=out[TI_U2K[r.unit]]; if(!o) return;
@@ -2544,6 +2548,8 @@ function tiCollect(m){
     o[isHq?'safeHq':'safeTeam']+=(hc*R.hc+sc*R.sc)*k;
     o.quota+=+r.staffAdj||0; o.accident+=+r.accSpec||0;
     o.multiRig+=+r.multiRig||0; o.hqIncent+=+r.hqIncent||0;
+    o.payBaseTeam+=+r.payBaseTeam||0; o.payBaseHq+=+r.payBaseHq||0;
+    o.paySafeTeam+=+r.paySafeTeam||0; o.paySafeHq+=+r.paySafeHq||0;
   });
   return out;
 }
@@ -2568,7 +2574,8 @@ function renderClPreview(){
       '<input type="checkbox" data-g="'+g.k+'"'+(P.groups.indexOf(g.k)>=0?' checked':'')+'>'+g.n+
       '<span class="sub">（'+g.fields.map(f=>CL_LBL[f]).join(' · ')+'）</span></label>').join('');
   const rule='<div class="sub" style="margin-top:8px">安效奖口径：钻井队 =（合同化+合同化待遇）×800×钻机利用率 +（市场化+第三方）×400×钻机利用率；'+
-    '机关 =（合同化+合同化待遇）×600 +（市场化+第三方）×300（机关无钻机，不按利用率折算），适用于西北机关、长庆机关。</div>';
+    '机关 =（合同化+合同化待遇）×600 +（市场化+第三方）×300（机关无钻机，不按利用率折算），适用于西北机关、长庆机关。'+
+    '<br>奖金实发口径：基础月奖与安效奖按台账「实发」四列直接汇总；专项奖计提即实发，不单独填报。</div>';
   const n=Math.min(d.length,12);
   const body=d.slice(0,n).map(x=>'<tr><td>'+YEAR+'-'+String(x.m).padStart(2,'0')+'</td><td>'+esc(x.un)+'</td>'+
       '<td style="text-align:left">'+esc(CL_LBL[x.f]||x.f)+'</td>'+
@@ -2798,7 +2805,8 @@ function renderSurplus(M){
     M.rows.map(o=>row(o,false)).join('')+row(M.co,true)+'</tbody>';
 
   $('#surplusNote').innerHTML='<span class="dim">计提与实发均按本年 1—12 月累计；'+
-    '其中切块额取本年 1—11 月 ＋ '+(YEAR-1)+' 年 12 月（按该年年度参数测算）。</span>';
+    '其中切块额取本年 1—11 月 ＋ '+(YEAR-1)+' 年 12 月（按该年年度参数测算）；'+
+    '实发的基础月奖与安效奖由「队伍信息」采集，专项奖计提即实发。</span>';
 
 }
 
@@ -3817,14 +3825,20 @@ const TI_FIELDS=[
   ['staffAdj','定员与调剂考核（元）','num',0],
   ['accSpec','事故复杂专项（元）','num',0],
   ['multiRig','一队多机／跨区域（元）','num',0],
-  ['hqIncent','机关过程激励（元）','num',0]
+  ['hqIncent','机关过程激励（元）','num',0],
+  /* 奖金实发（实施办法 第十一条），按元记整数；切块考核 01 的「奖金实发」由这四列按主体单位汇总采集 */
+  ['payBaseTeam','实发·基础月奖·钻井队（元）','num',0],
+  ['payBaseHq','实发·基础月奖·机关（元）','num',0],
+  ['paySafeTeam','实发·安效奖·钻井队（元）','num',0],
+  ['paySafeHq','实发·安效奖·机关（元）','num',0]
 ];
 const TI_DEC={}; TI_FIELDS.forEach(f=>TI_DEC[f[0]]=f[3]);
 function tiRound(f,v){ const n=+v; if(!isFinite(n)) return 0;
   const p=Math.pow(10,TI_DEC[f]||0); return Math.round((n+Number.EPSILON)*p)/p; }
 const TI_TOTALS=['foot','rev','gm','drillEff','lossTime','hc','hcTreat','sc',
-  'staffAdj','accSpec','multiRig','hqIncent'];   // 合计行只合计这些列（利用率是比率，不进合计）
-const TI_SEP='staffAdj';                          // 经营/用工 与 专项考核金额 两组之间的分隔列
+  'staffAdj','accSpec','multiRig','hqIncent',
+  'payBaseTeam','payBaseHq','paySafeTeam','paySafeHq'];   // 合计行只合计这些列（利用率是比率，不进合计）
+const TI_SEPS=['staffAdj','payBaseTeam'];         // 各分组首列：经营/用工 ｜ 专项考核金额 ｜ 奖金实发
 let TI_ID_N=0;
 const TI_KEY='kh-teaminfo-v2';
 let TINFO=(function(){ try{ const r=localStorage.getItem(TI_KEY); if(r){ const p=JSON.parse(r); if(Array.isArray(p)) return p; } }catch(e){} return null; })();
@@ -3914,7 +3928,7 @@ function renderTinfo(){
   if(added) tiMsg('已为该月补全 '+added+' 支队伍的名单。','ok');
   const rows=tiRows();
   $('#tiCount').textContent=TI_Y+' 年 '+TI_M+' 月 · '+rows.length+' 支队伍';
-  const sepOf=f=>f[0]===TI_SEP?' class="tiSep"':'';
+  const sepOf=f=>TI_SEPS.indexOf(f[0])>=0?' class="tiSep"':'';
   const head='<thead><tr><th>队伍名称</th><th>主体单位</th>'+TI_FIELDS.map(f=>'<th'+sepOf(f)+'>'+f[1]+'</th>').join('')+'<th>操作</th></tr></thead>';
   let body;
   if(!rows.length){
@@ -3930,7 +3944,7 @@ function renderTinfo(){
     }).join('')+
     '<tr class="total" id="tiTotal"><td style="text-align:left">合计（'+rows.length+' 队）</td><td></td>'+
     TI_FIELDS.map(f=>{
-      const c=(f[0]===TI_SEP?'tiSep':'');
+      const c=(TI_SEPS.indexOf(f[0])>=0?'tiSep':'');
       if(TI_TOTALS.indexOf(f[0])<0) return '<td class="dim '+c+'">—</td>';
       return '<td class="'+c+'" data-tot="'+f[0]+'">'+fmt(rows.reduce((a,r)=>a+(+r[f[0]]||0),0),f[3])+'</td>';
     }).join('')+'<td></td></tr></tbody>';
