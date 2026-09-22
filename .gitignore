@@ -1,0 +1,5 @@
+# 本机密钥配置，不进版本库（server/.env.example 是模板）
+server/.env
+# store.js 的原子写临时文件与损坏备份
+server/data/*.json.tmp-*
+server/data/*.corrupt-*
