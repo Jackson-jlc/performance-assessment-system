@@ -210,7 +210,7 @@ thead tr:first-child th[colspan]{text-align:center;border-bottom:1px solid var(-
 .kpi .v{font-size:27px;font-weight:600;line-height:1.2;margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.026em}
 .kpi .d{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
 /* 右侧分项：主数值与三项构成并排，细分割线区隔 */
-#dashKpi{grid-template-columns:repeat(auto-fit,minmax(322px,1fr))}
+#dashKpi{grid-template-columns:repeat(auto-fit,minmax(322px,1fr));position:relative}
 .kpi.wide{display:flex;align-items:stretch;gap:14px}
 .kpi.wide>.kmain{flex:1 1 auto;min-width:0}
 .kpi.wide>.kbd{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:3px;
@@ -220,6 +220,10 @@ thead tr:first-child th[colspan]{text-align:center;border-bottom:1px solid var(-
 .kbd .r>b{font-weight:590;font-variant-numeric:tabular-nums;color:var(--ink-2);letter-spacing:-.01em;white-space:nowrap}
 .kbd .r.cap{font-size:10px;padding-bottom:3px;margin-bottom:2px;border-bottom:1px solid var(--line-2)}
 .kbd .r.cap>b{color:var(--muted);font-weight:500}
+/* 分项行可悬停：浮出该分项在各主体单位上的明细 */
+.kbd .r.bd{margin:0 -6px;padding:0 6px;border-radius:6px;cursor:help;transition:background .16s ease}
+.kbd .r.bd:hover,.kbd .r.bd:focus-visible{background:var(--fill);outline:none}
+#kpiTip{max-width:248px}
 @media(max-width:560px){
   .kpi.wide{flex-direction:column;gap:10px}
   .kpi.wide>.kbd{border-left:0;border-top:1px solid var(--line-2);padding:9px 0 0;min-width:0}
@@ -2811,32 +2815,75 @@ function renderSurplus(M){
 }
 
 const KPI_UNIT='<span style="font-size:.5em;font-weight:500;color:var(--muted);margin-left:.2em;letter-spacing:0">万元</span>';
-/* 右侧分项列表：首行为单位说明，其后三行为构成项 */
-function kpiBd(unit, items){
+/* 右侧分项列表：首行为单位说明，其后三行为构成项；每个构成项都可悬停查看主体单位明细 */
+let KPI_BD=[];                       // KPI_BD[卡片序号][分项序号] = 该分项的主体单位明细浮层 HTML
+function kpiBd(ci, unit, items){
   return '<div class="kbd"><div class="r cap"><span>分项</span><b>'+unit+'</b></div>'+
-    items.map(function(it){ return '<div class="r"><span>'+it[0]+'</span><b>'+it[1]+'</b></div>'; }).join('')+'</div>';
+    items.map(function(it,ii){
+      return '<div class="r bd" data-c="'+ci+'" data-i="'+ii+'" tabindex="0"><span>'+it[0]+'</span><b>'+it[1]+'</b></div>';
+    }).join('')+'</div>';
+}
+/* 分项明细：三家主体单位逐行列示，末行为公司合计，取数与卡片同一口径 */
+function kpiDetail(M, title, pick, f, unit, note){
+  return '<div style="font-weight:600;margin-bottom:4px">'+title+'</div>'+
+    M.rows.map(function(o){
+      return '<div class="row"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+
+        o.color+';margin-right:5px"></i>'+o.n+'</span><b>'+f(pick(o))+'</b></div>';
+    }).join('')+
+    '<div class="row" style="border-top:1px solid var(--line-2);margin-top:4px;padding-top:4px"><span>公司合计</span><b>'+
+      f(pick(M.co))+(unit?' '+unit:'')+'</b></div>'+
+    (note?'<div class="dim" style="margin-top:4px;font-size:10.5px;line-height:1.45;white-space:normal">'+note+'</div>':'');
+}
+/* 悬停（或键盘聚焦）分项行 → 明细浮层。浮层挂在 #dashKpi 上，四张卡片共用一个。 */
+function bindKpiBd(){
+  const host=$('#dashKpi'), tip=$('#kpiTip'); if(!host||!tip) return;
+  const show=node=>{
+    const html=((KPI_BD[+node.dataset.c]||[])[+node.dataset.i])||''; if(!html) return;
+    tip.innerHTML=html; tip.hidden=false;
+    const r=node.getBoundingClientRect(), hr=host.getBoundingClientRect(), tw=tip.offsetWidth;
+    tip.style.left=Math.min(Math.max(r.left-hr.left+r.width/2-tw/2,0),Math.max(hr.width-tw,0))+'px';
+    const up=r.top-hr.top-tip.offsetHeight-8;
+    tip.style.top=(up<0 ? r.bottom-hr.top+8 : up)+'px';        // 上方放不下就翻到行下方
+  };
+  const hide=()=>{ tip.hidden=true; };
+  host.querySelectorAll('.kbd .r.bd').forEach(node=>{
+    node.addEventListener('mouseenter',()=>show(node));
+    node.addEventListener('focus',()=>show(node));
+    node.addEventListener('mouseleave',hide);
+    node.addEventListener('blur',hide);
+  });
 }
 function renderDashKpi(M){
-  const c=M.co, w=v=>fmt(v/10000,0);           // 金额一律折万元取整，小数留给比率
+  const c=M.co, w=v=>fmt(v/10000,0), p2=v=>pct(v,2);           // 金额一律折万元取整，小数留给比率
   // 卡片按三口径列示：基础月奖（含机关过程激励）／安效奖／专项奖
   const B=['基础月奖','安效奖','专项奖'];
+  // 每张卡片：[标题, 主数值, 说明, 分项表头单位, 明细单位, [[分项名, 按单位取数], …], 格式化, 明细脚注]
   const cards=[
-    ['公司过程指标完成率', pct(c.rate,2), '进尺 · 市场创收 · 贡献毛益额 按 30／40／30 加权',
-      '完成率', [[I_NAME.foot,pct(c.r[0],2)],[I_NAME.rev,pct(c.r[1],2)],[I_NAME.gm,pct(c.r[2],2)]]],
+    ['公司过程指标完成率', p2(c.rate), '进尺 · 市场创收 · 贡献毛益额 按 30／40／30 加权',
+      '完成率', '',
+      [[I_NAME.foot,o=>o.r[0]],[I_NAME.rev,o=>o.r[1]],[I_NAME.gm,o=>o.r[2]]], p2,
+      '公司合计按汇总口径（合计实际 ÷ 合计指标），不是三家的简单平均。'],
     ['年累切块额', w(c.accrued)+KPI_UNIT,
       '基础月奖切块基数 '+fmt(c.capBase/10000,0)+' 万元'+(c.hasPrevY?'（含'+(YEAR-1)+'年 '+fmt((c.pBase+c.pHqBase)/10000,0)+' 万元）':'')+
       ' · 计提率 '+pct(c.capBase?c.alloc/c.capBase:0,2)+
       ' · 切块口径 '+YEAR+'年1—11月'+(c.allocPrev?' ＋上年12月 '+w(c.allocPrev)+' 万元':''),
-      '万元', [[B[0],w(c.baseAcc)],[B[1],w(c.safe)],[B[2],w(c.spec)]]],
+      '万元', '万元',
+      [[B[0],o=>o.baseAcc],[B[1],o=>o.safe],[B[2],o=>o.spec]], w, ''],
     ['年累实发额', w(c.paid)+KPI_UNIT,
       '全口径应计提 '+w(c.accrued)+' 万元 · 兑现率 '+pct(c.accrued?c.paid/c.accrued:0,2),
-      '万元', [[B[0],w(c.payBase)],[B[1],w(c.paySafe)],[B[2],w(c.paySpec)]]],
+      '万元', '万元',
+      [[B[0],o=>o.payBase],[B[1],o=>o.paySafe],[B[2],o=>o.paySpec]], w, ''],
     ['切块节余', w(c.left)+KPI_UNIT, '已填报 '+c.fm+' / 12 月 · 第十二条纳入公司管理',
-      '万元', [[B[0],w(c.leftBase)],[B[1],w(c.leftSafe)],[B[2],w(c.leftSpec)]]]
+      '万元', '万元',
+      [[B[0],o=>o.leftBase],[B[1],o=>o.leftSafe],[B[2],o=>o.leftSpec]], w,
+      '专项奖计提即实发，节余恒为 0。']
   ];
-  $('#dashKpi').innerHTML=cards.map(x=>
+  KPI_BD=cards.map(x=> x[5].map(it=> kpiDetail(M, x[0]+' · '+it[0], it[1], x[6], x[4], x[7])));
+  $('#dashKpi').innerHTML=cards.map((x,ci)=>
     '<div class="kpi wide"><div class="kmain"><div class="k">'+x[0]+'</div><div class="v">'+x[1]+'</div>'+
-    '<div class="d">'+x[2]+'</div></div>'+kpiBd(x[3],x[4])+'</div>').join('');
+    '<div class="d">'+x[2]+'</div></div>'+kpiBd(ci,x[3],x[5].map(it=>[it[0],x[6](it[1](c))]))+'</div>').join('')+
+    '<div class="tip" id="kpiTip" hidden></div>';
+  bindKpiBd();
 }
 
 function renderDash(){ refreshAll(); }
