@@ -801,6 +801,17 @@ const pct = (n,d=1)=>{ if(n==null||isNaN(n)) return '—'; const f=Math.pow(10,d
 const $  = s=>document.querySelector(s);
 const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
 
+/* 状态提示条：统一 5 秒后自动隐藏。提示只交代「刚才那一下」的结果，一直挂在页面上
+   反而让下一次操作看不出到底生效了没有。清空前比对内容：期间已被新提示覆盖的，交给
+   新提示自己的计时器，不会把后来的消息一并抹掉。 */
+const MSG_HIDE_MS = 5000;
+const MSG_TIMERS = new WeakMap();
+function msgAutoHide(box, clear){
+  const t = MSG_TIMERS.get(box); if(t){ clearTimeout(t); MSG_TIMERS.delete(box); }
+  const snap = box.innerHTML; if(!snap) return;
+  MSG_TIMERS.set(box, setTimeout(()=>{ MSG_TIMERS.delete(box); if(box.innerHTML===snap) clear(); }, MSG_HIDE_MS));
+}
+
 /* ============================ 状态 ============================ */
 const S = {
   prov:{},                                // 字段来源 {src, conf, evidence}
@@ -1392,7 +1403,7 @@ function buildExportXls(){
 function exportMsg(html,cls){
   const e=$('#exportMsg'); if(!e) return;
   e.innerHTML=html||''; e.className='sub '+(cls==='err'?'neg':(cls==='ok'?'pos':''));
-  if(html) setTimeout(()=>{ if(e.innerHTML===html) e.innerHTML=''; },6000);
+  msgAutoHide(e,()=>exportMsg(''));
 }
 
 async function exportWell(){
@@ -1467,7 +1478,8 @@ function validateWell(){
 }
 function wellMsg(html,cls){ const m=$('#wellMsg'); if(!m) return;
   m.innerHTML = html ? '<div class="note '+(cls||'')+'">'+html+'</div>' : '';
-  m.style.marginTop = html ? '10px' : '0'; }
+  m.style.marginTop = html ? '10px' : '0';
+  msgAutoHide(m,()=>wellMsg('')); }
 
 function submitWell(){
   const errs=validateWell();
@@ -1578,7 +1590,9 @@ function migratePre(){
 }
 
 let PRE_WELL='__all';                       // 明细表筛选：__all = 全部井
-function preMsg(html,cls){ const m=$('#preMsg'); if(m) m.innerHTML = html ? '<div class="note '+(cls||'')+'" style="margin-bottom:14px">'+html+'</div>' : ''; }
+function preMsg(html,cls){ const m=$('#preMsg'); if(!m) return;
+  m.innerHTML = html ? '<div class="note '+(cls||'')+'" style="margin-bottom:14px">'+html+'</div>' : '';
+  msgAutoHide(m,()=>preMsg('')); }
 
 /* 计费单价：元/米（已含定员与难度），区块无米费定额时为 0 */
 function preRate(p){
@@ -2397,7 +2411,7 @@ function buildImportTpl(){
 function impMsg(html,cls){
   const e=$('#impMsg'); if(!e) return;
   e.innerHTML=html||''; e.className='sub '+(cls==='err'?'neg':(cls==='ok'?'pos':''));
-  if(html&&cls==='ok') setTimeout(()=>{ if(e.innerHTML===html) e.innerHTML=''; },6000);
+  msgAutoHide(e,()=>impMsg(''));
 }
 async function dlXls(name,xml){
   const dl=(typeof claude!=='undefined'&&claude.use)?await claude.use('downloads'):null;
@@ -3076,7 +3090,7 @@ const PERF_LBL={}; PERF_MANUAL.forEach(f=>PERF_LBL[f[0]]=f[1]);
 function perfImpMsg(html,cls){
   const e=$('#perfImpMsg'); if(!e) return;
   e.innerHTML=html||''; e.className='sub '+(cls==='err'?'neg':(cls==='ok'?'pos':''));
-  if(html&&cls==='ok') setTimeout(()=>{ if(e.innerHTML===html) e.innerHTML=''; },6000);
+  msgAutoHide(e,()=>perfImpMsg(''));
 }
 /* 录入值纠偏：与页面录入框同一套限制，导入不能绕过 */
 function perfClamp(f,v){
@@ -3785,7 +3799,8 @@ function tiEnsureRoster(y,m){
 const TI0=tiNow();
 let TI_Y=TI0.y, TI_M=TI0.m, TI_UNIT='__all', TI_TEAM='__all', TI_DEL=null, TI_DEL_T=null;
 function tiMsg(html,cls){ const m=$('#tiMsg'); if(!m) return;
-  m.innerHTML=html?'<div class="note '+(cls||'')+'" style="margin-bottom:14px">'+html+'</div>':''; }
+  m.innerHTML=html?'<div class="note '+(cls||'')+'" style="margin-bottom:14px">'+html+'</div>':'';
+  msgAutoHide(m,()=>tiMsg('')); }
 function tiRows(){
   return TINFO.filter(r=>r.year===TI_Y&&r.month===TI_M&&
     (TI_UNIT==='__all'||r.unit===TI_UNIT)&&
