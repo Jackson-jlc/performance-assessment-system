@@ -174,3 +174,8 @@
 [seed] wells 已存在，跳过。
 钻井经营考核系统后端已启动：http://localhost:4000
 数据目录：C:\Users\86188\Documents\GitHub\performance-assessment-system\server\data
+[auth] 警告：JWT_SECRET 未在 .env 中设置，正使用默认值——生产环境务必修改！
+[seed] quota 已存在，跳过。
+[seed] wells 已存在，跳过。
+钻井经营考核系统后端已启动：http://localhost:4000
+数据目录：C:\Users\86188\Documents\GitHub\performance-assessment-system\server\data
