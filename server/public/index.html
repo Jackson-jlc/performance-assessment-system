@@ -276,7 +276,7 @@ main.full{padding-bottom:26px}
 #wellActions{display:flex;flex-direction:column;gap:6px;flex:0 0 auto;min-width:112px}
 #wellActions .btn{width:100%}
 .wellcol{overflow-y:auto;overflow-x:hidden;min-height:0;display:flex;flex-direction:column;gap:16px;padding:2px 8px 10px 2px;overscroll-behavior:contain}
-/* 完成井考核库：页面最下方的折叠条，与切块考核「数据填报」同一形制；展开时自身滚动，不挤压上方两栏 */
+/* 完成井考核库：置顶折叠条，与切块考核「数据填报」同一形制；展开时自身滚动，不挤压下方两栏 */
 #storeCard{flex:0 0 auto}
 #storeCard .foldbody{max-height:38vh;overflow:auto}
 .disc{display:inline-flex;align-items:center;gap:5px;background:none;border:0;color:var(--accent);cursor:pointer;font-size:12.5px;font-weight:500;padding:2px 4px;border-radius:6px}
@@ -383,7 +383,40 @@ main.full{padding-bottom:26px}
       <select id="dashYear" style="background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:7px 10px"></select></div>
   </div>
 
-  <div class="kpis" id="dashKpi"></div>
+  <div class="card foldbar closed" id="formCard">
+    <button class="foldhead" id="formFold" type="button">
+      <span class="fh-l">
+        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg>
+        <b>数据填报</b>
+        <span class="sub" id="formFoldSub"></span>
+      </span>
+      <span class="sub" id="formFoldAct">展开填报</span>
+    </button>
+    <div class="foldbody">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+        <div class="seg" id="formSeg"></div>
+        <span id="formMonthWrap" style="display:inline-flex;gap:6px;align-items:center">
+          <span class="eyebrow">月份</span>
+          <select id="formMonth" style="background:var(--surface-2);border:1px solid transparent;border-radius:7px;padding:6px 10px"></select>
+        </span>
+        <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">
+          <select id="clScope" style="background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:6px 10px">
+            <option value="month">本月</option><option value="year">全年（1—12月）</option></select>
+          <button class="btn" id="clPick">从队伍信息采集</button>
+          <button class="btn ghost" id="tplDl">模板下载</button>
+          <button class="btn ghost" id="impPick">一键导入</button>
+          <input type="file" id="impFile" accept=".xlsx,.xls,.csv" hidden>
+        </span>
+      </div>
+      <div id="impMsg" class="sub" style="margin:-4px 0 12px"></div>
+      <div id="impPreview"></div>
+      <div class="scroll"><table id="formTbl"></table></div>
+      <div class="scroll" style="margin-top:14px"><div id="formProgress"></div></div>
+      <p class="sub" style="margin-top:12px">状态按钮循环切换：草稿 → 已提交 → 已审核</p>
+    </div>
+  </div>
+
+  <div class="kpis" id="dashKpi" style="margin-top:18px"></div>
 
   <div class="card" style="margin-top:18px">
     <header><h3>指标完成情况</h3>
@@ -417,38 +450,6 @@ main.full{padding-bottom:26px}
       <p class="sub" style="margin:10px 0 0">计提含基础月奖（含机关过程激励）、安效奖、专项奖（定员与调剂考核、事故复杂、一队多机／跨区域）；节余按第十二条纳入公司管理，为负表示实发已超出计提。</p>
     </div>
   </div>
-  <div class="card foldbar closed" id="formCard" style="margin-top:18px">
-    <button class="foldhead" id="formFold" type="button">
-      <span class="fh-l">
-        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg>
-        <b>数据填报</b>
-        <span class="sub" id="formFoldSub"></span>
-      </span>
-      <span class="sub" id="formFoldAct">展开填报</span>
-    </button>
-    <div class="foldbody">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-        <div class="seg" id="formSeg"></div>
-        <span id="formMonthWrap" style="display:inline-flex;gap:6px;align-items:center">
-          <span class="eyebrow">月份</span>
-          <select id="formMonth" style="background:var(--surface-2);border:1px solid transparent;border-radius:7px;padding:6px 10px"></select>
-        </span>
-        <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">
-          <select id="clScope" style="background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:6px 10px">
-            <option value="month">本月</option><option value="year">全年（1—12月）</option></select>
-          <button class="btn" id="clPick">从队伍信息采集</button>
-          <button class="btn ghost" id="tplDl">模板下载</button>
-          <button class="btn ghost" id="impPick">一键导入</button>
-          <input type="file" id="impFile" accept=".xlsx,.xls,.csv" hidden>
-        </span>
-      </div>
-      <div id="impMsg" class="sub" style="margin:-4px 0 12px"></div>
-      <div id="impPreview"></div>
-      <div class="scroll"><table id="formTbl"></table></div>
-      <div class="scroll" style="margin-top:14px"><div id="formProgress"></div></div>
-      <p class="sub" style="margin-top:12px">状态按钮循环切换：草稿 → 已提交 → 已审核</p>
-    </div>
-  </div>
 </section>
 
 <!-- ============ 02 单井考核 ============ -->
@@ -464,6 +465,21 @@ main.full{padding-bottom:26px}
   </div>
 
   <div class="wellwrap">
+    <div class="card foldbar closed" id="storeCard">
+      <button class="foldhead" id="storeFold" type="button">
+        <span class="fh-l">
+          <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg>
+          <b>完成井考核库</b>
+          <span class="sub" id="storeCount"></span>
+        </span>
+        <span class="sub" id="storeFoldAct">展开井库</span>
+      </button>
+      <div class="foldbody">
+        <div class="scroll"><table id="wellStoreTbl"></table></div>
+        <p class="sub" style="margin:10px 0 0">「入库时兑现」为提交时快照，「现行定额兑现」按当前定额库重算——不一致须经考核办公室确认后重新提交。</p>
+      </div>
+    </div>
+
     <div class="wellsplit">
       <div class="wellcol">
         <div class="card wellhead">
@@ -527,21 +543,6 @@ main.full{padding-bottom:26px}
           <header><h3>本井终考核兑现</h3><span class="eyebrow">兑现合计 − 已预兑现</span></header>
           <div class="body" id="finalPanel"></div>
         </div>
-      </div>
-    </div>
-
-    <div class="card foldbar closed" id="storeCard">
-      <button class="foldhead" id="storeFold" type="button">
-        <span class="fh-l">
-          <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg>
-          <b>完成井考核库</b>
-          <span class="sub" id="storeCount"></span>
-        </span>
-        <span class="sub" id="storeFoldAct">展开井库</span>
-      </button>
-      <div class="foldbody">
-        <div class="scroll"><table id="wellStoreTbl"></table></div>
-        <p class="sub" style="margin:10px 0 0">「入库时兑现」为提交时快照，「现行定额兑现」按当前定额库重算——不一致须经考核办公室确认后重新提交。</p>
       </div>
     </div>
   </div>
