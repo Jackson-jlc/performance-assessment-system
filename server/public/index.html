@@ -231,9 +231,6 @@ thead tr:first-child th[colspan]{text-align:center;border-bottom:1px solid var(-
 
 /* ---------- 表单 ---------- */
 textarea{min-height:160px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
-.conf{display:inline-block;width:36px;height:6px;border-radius:99px;background:var(--fill);vertical-align:middle;overflow:hidden;margin-right:6px}
-.conf i{display:block;height:100%;background:var(--pos);border-radius:99px}
-.conf.low i{background:var(--signal)}
 
 /* ---------- misc ---------- */
 .legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px}
@@ -1534,13 +1531,6 @@ function saveWells(){ try{ localStorage.setItem(WKEY,JSON.stringify(WELLS)); }ca
   apiSave('wells','井库','/api/wells',()=>WELLS); }
 function newId(){ return 'W'+Date.now().toString(36).toUpperCase()+Math.floor(Math.random()*90+10); }
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
-function fieldCount(){ return F.flatMap(g=>g.rows.flat()).length; }
-function provStat(prov){
-  const v=Object.values(prov||{});
-  const sys=v.filter(p=>p.src==='sys').length, ai=v.filter(p=>p.src==='ai').length;
-  return {sys,ai,man:Math.max(fieldCount()-sys-ai,0)};
-}
-function trustOf(p){ const t=p.sys+p.ai+p.man; return t? (p.sys+p.ai*0.85)/t : 0; }
 function stamp(ts){ const d=new Date(ts);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+
     ' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
@@ -2000,7 +1990,7 @@ function renderWellStore(){
   }
   let sum=0, sumNow=0, sumPre=0, sumRest=0;
   const body=WELLS.map(r=>{
-    const now=calc(r.w), p=provStat(r.prov), tr=trustOf(p), pre=preOfWell(r.w.wellNo);
+    const now=calc(r.w), pre=preOfWell(r.w.wellNo);
     sumPre+=pre.paid; sumRest+=pre.rest;
     const drift=now.total-r.snap.total;
     sum+=r.snap.total; sumNow+=now.total;
@@ -2018,17 +2008,16 @@ function renderWellStore(){
       '<td>'+fmt(now.total)+(Math.abs(drift)>1?'<div class="sub '+(drift>0?'pos':'neg')+'">'+(drift>0?'+':'')+fmt(drift)+'</div>':'')+'</td>'+
       '<td>'+fmt(pre.paid)+(pre.rows.length?'<div class="sub">'+pre.rows.length+' 个月</div>':'')+'</td>'+
       '<td class="'+(pre.rest<0?'neg':'')+'">'+fmt(pre.rest)+(pre.rest<0?'<div class="sub neg">挂账</div>':'')+'</td>'+
-      '<td><span class="conf '+(tr<0.75?'low':'')+'"><i style="width:'+(tr*100).toFixed(0)+'%"></i></span>'+pct(tr,0)+'</td>'+
       '<td><button class="pill '+sd[2]+'" data-st="'+r.id+'" style="cursor:pointer;border:0">'+sd[1]+'</button></td>'+
       '<td style="text-align:left"><span style="display:inline-flex;gap:4px;flex-wrap:wrap">'+
         '<button class="btn ghost mini" data-load="'+r.id+'">调取</button>'+
         '<button class="btn ghost mini" data-edit="'+r.id+'">修改</button>'+del+'</span></td></tr>';
   }).join('');
   T.innerHTML='<thead><tr><th>考核时间</th><th>井号 / 入库单号</th><th>队号</th><th>井型 · 区块 · 开次</th><th>考核进尺</th>'+
-    '<th>入库时兑现</th><th>现行定额兑现</th><th>已预兑现</th><th>终考核应发</th><th>可信度</th><th>状态</th><th>操作</th></tr></thead><tbody>'+body+
+    '<th>入库时兑现</th><th>现行定额兑现</th><th>已预兑现</th><th>终考核应发</th><th>状态</th><th>操作</th></tr></thead><tbody>'+body+
     '<tr class="total"><td>合计 '+WELLS.length+' 口</td><td colspan="4"></td><td>'+fmt(sum)+'</td><td>'+fmt(sumNow)+
     (Math.abs(sumNow-sum)>1?'<div class="sub '+(sumNow>sum?'pos':'neg')+'">'+(sumNow>sum?'+':'')+fmt(sumNow-sum)+'</div>':'')+
-    '</td><td>'+fmt(sumPre)+'</td><td class="'+(sumRest<0?'neg':'')+'">'+fmt(sumRest)+'</td><td colspan="3"></td></tr></tbody>';
+    '</td><td>'+fmt(sumPre)+'</td><td class="'+(sumRest<0?'neg':'')+'">'+fmt(sumRest)+'</td><td colspan="2"></td></tr></tbody>';
 
   T.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>loadWell(b.dataset.load,false));
   T.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>loadWell(b.dataset.edit,true));
