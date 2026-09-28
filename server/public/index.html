@@ -1094,7 +1094,7 @@ const F = [
   {leg:'基础信息', rows:[
     [{k:'wellNo',l:'井号',t:'text'},{k:'team',l:'队号',t:'select',opt:Q.rigs.map(r=>r.team)}],
     [{k:'wellType',l:'井型',t:'select',opt:['定向井','水平井','直井']},
-     {k:'block',l:'区块',t:'select',blank:'— 请选择区块 —',
+     {k:'block',l:'区块',t:'combo',blank:'— 请选择或输入区块 —',
       optFn:()=>[...new Set((Q.blocks||[]).map(b=>b.block))].sort((a,b)=>String(a).localeCompare(String(b),'zh'))},
      {k:'phase',l:'开次',t:'select',opt:[2,3,4]}],
     [{k:'revenue',l:'本井收入（元）',t:'num',step:.01},{k:'gmAmount',l:'贡献毛益额（元）',t:'num',step:.01}],
@@ -1153,6 +1153,18 @@ function field(f){
     }
     opts.forEach(o=>{ const op=el('option',null,o); op.value=o; if(String(o)===String(v))op.selected=true; inp.appendChild(op); });
     inp.addEventListener('change',e=>{ S.w[k]= (k==='phase')?+e.target.value:e.target.value; setSrc(k,'man'); render(); });
+  } else if(f.t==='combo'){
+    /* 输入框 + 下拉建议：可从定额库已有区块中选，也可手动输入新区块名 */
+    inp=el('input'); inp.id='f_'+k; inp.type='text';
+    inp.value = v==null?'':v;
+    inp.placeholder = f.blank||'';
+    const dlId='dl_'+k;
+    inp.setAttribute('list', dlId);
+    const dl=el('datalist',null,''); dl.id=dlId;
+    ((f.optFn?f.optFn():f.opt)||[]).forEach(o=>{ const op=el('option',null,o); op.value=o; dl.appendChild(op); });
+    d.appendChild(dl);
+    inp.addEventListener('input',e=>{ S.w[k]=e.target.value; setSrc(k,'man'); renderResults(); });
+    inp.addEventListener('change',()=>render());
   } else {
     inp=el('input'); inp.id='f_'+k; inp.type = f.t==='num'?'number':'text'; if(f.step)inp.step=f.step;
     inp.value = v===0&&f.t==='num' ? 0 : v;
