@@ -995,12 +995,13 @@ function calc(wIn){
 
   // —— ③ 成本定额 ——
   // 计取基数与考核进尺同口径——一律用折算后进尺，不得用原始「天数×日进尺」：
-  //   实际进尺 + 侧钻 + 井控/井漏折算进尺 —— 各项成本定额全额计提
+  //   实际进尺 + 侧钻 —— 各项成本定额全额计提
   //   取心折算进尺 —— 所有成本定额（含网电）按 60% 核算
-  //   试油折算进尺 —— 网电按 40%，其它各项成本定额按 20% 核算
-  const normalMeters = (+w.footage||0) + (+w.sidetrack||0) + convKick + convLoss;
-  const energyMeters = normalMeters + convTest*0.4 + convCore*0.6;   // 网电：试油40% · 取心60%
-  const otherMeters  = normalMeters + convTest*0.2 + convCore*0.6;   // 其它成本：试油20% · 取心60%
+  //   网电：试油/完井折算进尺按 40%、气水侵溢流/井漏折算进尺按 30% 核算
+  //   其它成本：试油/完井、气水侵溢流、井漏折算进尺一律按 20% 核算
+  const normalMeters = (+w.footage||0) + (+w.sidetrack||0);
+  const energyMeters = normalMeters + convTest*0.4 + convCore*0.6 + convKick*0.3 + convLoss*0.3;   // 网电：试油40% · 取心60% · 井控/井漏30%
+  const otherMeters  = normalMeters + convTest*0.2 + convCore*0.6 + convKick*0.2 + convLoss*0.2;   // 其它成本：试油20% · 取心60% · 井控/井漏20%
   const winterEnergyK = (w.winter && w.diesel) ? 1.10 : 1;          // 冬季使用柴油施工上浮10%（网电施工不再上浮）
   const geoRate = (w.geoMove ? (big70?12546:11500.5) : 0) + (w.geoShift ? 4182 : 0);
   const std = {
@@ -1296,7 +1297,7 @@ function renderResults(){
           (c.mifei?c.mifei.toFixed(6):'<span class="neg">无定额</span>'),
           fmt(c.footEval)+' m', w.crewStd+'人 × '+c.K+' × '+c.dayK, fmt(c.mifeiAmt)]);
   h+=row(['<strong>③ 成本定额</strong>', fmt(c.stdSum), fmt(c.actSum), money(c.saving), '<strong>'+fmt(c.costAmt)+'</strong>'],'grp');
-  h+=row(['<span class="sub">核算当量米（折算进尺口径）：网电 '+fmt(c.energyMeters)+' m（试油折算×40% 取心折算×60%）· 其它成本 '+fmt(c.otherMeters)+' m（试油折算×20% 取心折算×60%）'+(c.winterEnergyK>1?' · 冬季柴油上浮10%':'')+'</span>','','','','']);
+  h+=row(['<span class="sub">核算当量米（折算进尺口径）：网电 '+fmt(c.energyMeters)+' m（试油/完井折算×40% 取心折算×60% 气水侵溢流/井漏折算×30%）· 其它成本 '+fmt(c.otherMeters)+' m（试油/完井、气水侵溢流、井漏折算×20% 取心折算×60%）'+(c.winterEnergyK>1?' · 冬季柴油上浮10%':'')+'</span>','','','','']);
   COST_KEYS.forEach(k=>{ const d=c.std[k]-c.act[k];
     h+=row(['<span class="sub">'+COST_LABEL[k]+'</span>', fmt(c.std[k]), fmt(c.act[k]), money(d), '<span class="dim">'+fmt(d*0.8)+'</span>']); });
   if(c.waitComp>0) h+=row(['<span class="sub">等停能耗补偿（'+fmt(w.waitDays,1)+' 天 × 0.2 吨/天 × '+fmt(c.dieselPrice,0)+' 元/吨）</span>', fmt(c.waitComp), '0', money(c.waitComp), '<span class="dim">'+fmt(c.waitComp)+'</span>']);
