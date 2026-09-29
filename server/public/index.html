@@ -906,7 +906,7 @@ const S = {
   prov:{},                                // 字段来源 {src, conf, evidence}
   w:{
     wellNo:'', team:'70318', wellType:'水平井', block:'', phase:2,
-    footage:0, cycleDays:0, crewStd:38, planDays:0, difficulty:1,
+    footage:0, cycleDays:0, assessedCycleDays:0, crewStd:38, planDays:0, difficulty:1,
     keyExpl:false, horizLen:0, displacement:0, vertDepth:0, techCasing:0,
     dayrate:false, dayrateRatio:100, winter:false, e2o:false, diesel:true,
     testDays:0, coreDays:0, kickDays:0, lossDays:0, sidetrack:0, waitDays:0,
@@ -1043,7 +1043,9 @@ function calc(wIn){
 
   const spdRate = 30000;
   const actDays=+w.cycleDays||0, planDays=+w.planDays||0;
-  const speedMet = planDays>0 ? actDays<=planDays : true;
+  // 实际考核钻完井周期：剔除甲方原因/不可抗力因素后的周期，未填时按钻完井周期计，用于钻井提速专项判定
+  const assessedDays = (+w.assessedCycleDays||0)>0 ? +w.assessedCycleDays : actDays;
+  const speedMet = planDays>0 ? assessedDays<=planDays : true;
   const spdAmt = speedMet ? spdRate*rm : -(spdRate/2)*rm;
 
   // 毛益率口径：优先「贡献毛益额 ÷ 本井收入」，两者未录入时回退到手工填写的毛益率
@@ -1069,7 +1071,7 @@ function calc(wIn){
   const dmgDed = Math.max(+w.damageDeduct||0, 0);
   const total = gross - qDed - dmgDed;
 
-  return {B,R,big70,K,dayK,convDays,convFoot,convTest,convCore,convKick,convLoss,footEval,procRows,procSum,mifei,mifeiAmt,speedMet,actDays,planDays,
+  return {B,R,big70,K,dayK,convDays,convFoot,convTest,convCore,convKick,convLoss,footEval,procRows,procSum,mifei,mifeiAmt,speedMet,actDays,assessedDays,planDays,
           normalMeters,energyMeters,otherMeters,winterEnergyK,
           std,act,stdSum,actSum,saving,costAmt,quotaSum,
           gmRaw,gm,gAvg,g110,g120,
@@ -1104,6 +1106,7 @@ const F = [
   {leg:'工作量与周期', rows:[
     [{k:'footage',l:'实际进尺（米）',t:'num'},{k:'cycleDays',l:'钻完井周期（天）',t:'num',step:.1}],
     [{k:'crewStd',l:'定员标准（人）',t:'num'},{k:'planDays',l:'策划周期（天）',t:'num',step:.1}],
+    [{k:'assessedCycleDays',l:'实际考核钻完井周期（天，剔除甲方原因/不可抗力，未填按钻完井周期计）',t:'num',step:.1}],
     [{k:'testDays',l:'试油/完井（天）×0.5',t:'num',step:.1},{k:'coreDays',l:'取心（天）×1.0',t:'num',step:.1}],
     [{k:'kickDays',l:'气水侵溢流（天）×0.7',t:'num',step:.1},{k:'lossDays',l:'井漏/事故复杂（天）×0.3',t:'num',step:.1}],
     [{k:'sidetrack',l:'认可侧钻报废进尺（米）',t:'num'},{k:'difficulty',l:'难度系数',t:'num',step:.01}],
@@ -1228,7 +1231,7 @@ function money(n){ const c = n>0?'pos':(n<0?'neg':'dim'); return `<span class="$
 
 function renderResults(){
   const c=calc(), w=S.w, R=c.R, ds=diffSuggest();
-  const actDays=+w.cycleDays||0, planDays=+w.planDays||0;
+  const actDays=+w.cycleDays||0, planDays=+w.planDays||0, assessedDays=c.assessedDays;
 
   const subTxt=(w.wellNo||'未命名井')+' · '+w.team+' · '+w.wellType+' '+(w.block||'未选区块')+' '+w.phase+'开';
   if($('#wellHeadSub')) $('#wellHeadSub').textContent=subTxt;
@@ -1271,20 +1274,21 @@ function renderResults(){
     ].map(x=>'<div class="kv"><span>'+x[0]+'</span><span>'+x[1]+'</span></div>').join('')+'</div>';
 
   /* ---- 周期情况 ---- */
-  const gap=planDays>0 ? actDays-planDays : null;
-  const met=planDays>0 ? actDays<=planDays : null;
+  const gap=planDays>0 ? assessedDays-planDays : null;
+  const met=planDays>0 ? assessedDays<=planDays : null;
   $('#cycPanel').innerHTML=
     '<div class="k sub">周期情况（单位：天）</div>'+
     '<div style="display:flex;align-items:baseline;gap:10px;margin-top:4px">'+
-      '<div class="bignum">'+fmt(actDays,1)+'</div>'+
+      '<div class="bignum">'+fmt(assessedDays,1)+'</div>'+
       (met===null?'<span class="pill">未填策划周期</span>'
         :'<span class="pill '+(met?'ai':'bad')+'">'+(met?'完成提速目标':'未完成')+'</span>')+
     '</div>'+
     '<div style="margin-top:9px">'+
     [['钻完井周期', fmt(actDays,1)+' 天'],
      ['折合钻机月', fmt(actDays/30,2)+' 台月（周期 ÷ 30）'],
+     ['实际考核钻完井周期', fmt(assessedDays,1)+' 天（剔除甲方原因/不可抗力）'],
      ['策划周期', planDays>0?fmt(planDays,1)+' 天':'—'],
-     ['差值', gap===null?'—':'<span class="'+(gap<=0?'pos':'neg')+'">'+(gap>0?'+':'')+fmt(gap,1)+' 天</span>']
+     ['差值（考核周期 − 策划周期）', gap===null?'—':'<span class="'+(gap<=0?'pos':'neg')+'">'+(gap>0?'+':'')+fmt(gap,1)+' 天</span>']
     ].map(x=>'<div class="kv"><span>'+x[0]+'</span><span>'+x[1]+'</span></div>').join('')+'</div>';
 
   /* ---- 三定额 ---- */
@@ -1312,8 +1316,8 @@ function renderResults(){
   s+=row(['<strong>④ 事故复杂专项</strong>', w.hasAccident?'-10,000 元/台月':'+20,000 元/台月',
           w.hasAccident?'发生（备查费用 '+fmt(w.accidentCost)+' 元）':'无', '<span class="sub">'+c.accNote+'</span>', '<strong>'+money(c.accAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑤ 钻井提速专项</strong>', fmt(c.spdRate)+' 元/台月',
-          fmt(actDays,1)+' / '+(planDays>0?fmt(planDays,1):'—')+' 天',
-          '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
+          fmt(assessedDays,1)+' / '+(planDays>0?fmt(planDays,1):'—')+' 天',
+          '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'（按实际考核周期判定）</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑥ 单井毛益专项</strong>', c.gAvg!=null?pct(c.gAvg,2):'—', c.gmRaw?pct(c.gm,2):'0（待考核）',
           '<span class="sub">'+c.gmNote+'</span>', '<strong>'+money(c.gmAmt)+'</strong>'],'grp');
   s+=row(['<strong>三专项小计</strong>','','','','<strong>'+money(c.specSum)+'</strong>'],'total');
@@ -1442,8 +1446,8 @@ function buildExportXls(){
   row(26,[xc('实际进尺','xTh'),xc('其它工序折算','xTh'),xc('认可侧钻进尺','xTh'),xc('折算周期合计','xTh'),xc('考核进尺合计','xTh')]);
   row(20,[xn(+w.footage||0,'xNum0'),xn(c.convFoot,'xNum'),xn(+w.sidetrack||0,'xNum0'),xn(c.convDays,'xNum'),xn(c.footEval,'xNum')]);
   row(22,[xc('四、周期情况（天）','xSec',4)]);
-  row(26,[xc('钻完井周期','xTh'),xc('折合钻机月（台月）','xTh'),xc('策划周期','xTh'),xc('差值','xTh'),xc('提速判定','xTh')]);
-  row(20,[xn(c.actDays,'xNum'),xn(c.actDays/30,'xNum'),xn(c.planDays||'','xNum'),xn(c.planDays>0?c.actDays-c.planDays:'','xNum'),xt(c.planDays>0?(c.speedMet?'完成策划目标':'未完成'):'未填策划周期','xTd')]);
+  row(26,[xc('钻完井周期','xTh'),xc('实际考核钻完井周期','xTh'),xc('策划周期','xTh'),xc('差值（考核−策划）','xTh'),xc('提速判定','xTh')]);
+  row(20,[xn(c.actDays,'xNum'),xn(c.assessedDays,'xNum'),xn(c.planDays||'','xNum'),xn(c.planDays>0?c.assessedDays-c.planDays:'','xNum'),xt(c.planDays>0?(c.speedMet?'完成策划目标':'未完成'):'未填策划周期','xTd')]);
   row(22,[xc('五、三定额情况（兑现·元）','xSec',4)]);
   row(26,[xc('考核项目','xTh'),xc('定额基准','xTh'),xc('实际','xTh'),xc('差异','xTh'),xc('兑现（元）','xTh')]);
   row(20,[xc('① 工序定额','xTdL'),xt('','xTd'),xt('','xTd'),xt('','xTd'),xm(c.procSum)]);
@@ -1457,7 +1461,7 @@ function buildExportXls(){
   row(22,[xc('六、三专项情况（兑现·元）','xSec',4)]);
   row(26,[xc('专项项目','xTh'),xc('考核标准','xTh'),xc('实际','xTh'),xc('判定','xTh'),xc('兑现（元）','xTh')]);
   row(20,[xc('④ 事故复杂专项','xTdL'),xt(w.hasAccident?'-10000 元/台月':'+20000 元/台月','xTd'),xt(w.hasAccident?('发生（备查费用 '+fmt(+w.accidentCost||0)+' 元）'):'无','xTd'),xt(c.accNote,'xTdL'),xm(c.accAmt)]);
-  row(20,[xc('⑤ 钻井提速专项','xTdL'),xt(c.spdRate+' 元/台月','xTd'),xt(c.actDays+' / '+(c.planDays||'—')+' 天','xTd'),xt(c.speedMet?'完成策划目标':'未完成，减半核减','xTd'),xm(c.spdAmt)]);
+  row(20,[xc('⑤ 钻井提速专项','xTdL'),xt(c.spdRate+' 元/台月','xTd'),xt(c.assessedDays+' / '+(c.planDays||'—')+' 天','xTd'),xt(c.speedMet?'完成策划目标':'未完成，减半核减','xTd'),xm(c.spdAmt)]);
   row(20,[xc('⑥ 单井毛益专项','xTdL'),xt(gmStd,'xTd'),xt(gmAct,'xTd'),xt(c.gmNote,'xTdL'),xm(c.gmAmt)]);
   row(20,[xc('三专项小计','xSum'),xt('','xSum'),xt('','xSum'),xt('','xSum'),xm(c.specSum,0,'xSumNum')]);
   row(22,[xc('七、本井兑现合计（元）','xSec',4)]);
@@ -1765,13 +1769,22 @@ function renderPreForm(){
       inp=el('input'); inp.type='text'; inp.value=PF[f[0]];
       inp.addEventListener('input',e=>{ PF[f[0]]=e.target.value; });
       inp.addEventListener('change',()=>{ if(preFillFromHistory()) renderPreForm(); preRateHint(); });
+    } else if(f[2]==='blk'){
+      /* 输入框 + 下拉建议：可从定额库已有区块中选，也可手动输入新区块名 */
+      inp=el('input'); inp.type='text'; inp.value=PF[f[0]];
+      inp.placeholder='— 请选择或输入区块 —';
+      const dlId='dl_pf_'+f[0];
+      inp.setAttribute('list', dlId);
+      const dl=el('datalist',null,''); dl.id=dlId;
+      [...new Set((Q.blocks||[]).map(b=>b.block))].sort((a,b)=>String(a).localeCompare(String(b),'zh'))
+        .forEach(o=>{ const op=el('option',null,o); op.value=o; dl.appendChild(op); });
+      d.appendChild(dl);
+      inp.addEventListener('input',e=>{ PF[f[0]]=e.target.value; preRateHint(); });
     } else {
       inp=el('select');
       const opts = f[2]==='month' ? preMonthOpts()
                  : f[2]==='team'  ? Q.rigs.map(r=>r.team)
-                 : f[2]==='blk'   ? [...new Set((Q.blocks||[]).map(b=>b.block))].sort((a,b)=>String(a).localeCompare(String(b),'zh'))
                  : f[3];
-      if(f[2]==='blk') inp.appendChild(Object.assign(el('option',null,'— 请选择区块 —'),{value:''}));
       opts.forEach(o=>{ const op=el('option',null,o); op.value=o; if(String(o)===String(PF[f[0]])) op.selected=true; inp.appendChild(op); });
       inp.addEventListener('change',e=>{ PF[f[0]]= f[0]==='phase' ? +e.target.value : e.target.value; preRateHint(); });
     }
@@ -1964,12 +1977,13 @@ function renderWellSettle(){
     return;
   }
   const S3=f=>rows.reduce((a,r)=>a+r[f],0), bal=S3('total')-S3('pre')-S3('pay');
-  T.innerHTML='<thead><tr><th class="l">队号</th><th class="l">井号</th>'+
+  T.innerHTML='<thead><tr><th class="l">考核日期</th><th class="l">队号</th><th class="l">井号</th>'+
     '<th>兑现总额<span class="u">元</span></th><th>预兑现合计<span class="u">元</span></th>'+
     '<th>终考核实发<span class="u">元</span></th><th>节余 / 挂账<span class="u">元</span></th>'+
     '<th class="l">结转处理说明</th></tr></thead><tbody>'+
-    rows.map(r=>'<tr><td class="l">'+r.team+'</td>'+
-      '<td class="l">'+r.well+'<div class="sub">'+stamp(r.at)+' 已审核</div></td>'+
+    rows.map(r=>'<tr><td class="l">'+stamp(r.at).slice(0,10)+'</td>'+
+      '<td class="l">'+r.team+'</td>'+
+      '<td class="l">'+r.well+'<div class="sub">已审核</div></td>'+
       '<td>'+fmt(r.total)+'</td><td>'+fmt(r.pre)+'</td>'+
       '<td><input type="number" step="1000" data-ws="'+r.id+'" value="'+Math.round(r.pay)+'">'+
         '<div class="sub">应发 '+fmt(r.due)+(r.set?'':' · 未登记')+'</div></td>'+
@@ -1980,7 +1994,7 @@ function renderWellSettle(){
         : (r.rest<0 ? '<span class="pill bad">挂账 '+fmt(-r.rest)+'</span>' : '<span class="pill">节余 '+fmt(r.rest)+'</span>')+
           ' 自动结转至本队'+(r.next?'下口井「'+r.next+'」，并入其终考核一并清算':'下口井，待下口井入库审核后自动并入'))+
       '</td></tr>').join('')+
-    '<tr class="total"><td class="l">合计 '+rows.length+' 口井</td><td class="l dim">'+new Set(rows.map(r=>r.team)).size+' 支队伍</td>'+
+    '<tr class="total"><td class="l"></td><td class="l">合计 '+rows.length+' 口井</td><td class="l dim">'+new Set(rows.map(r=>r.team)).size+' 支队伍</td>'+
     '<td>'+fmt(S3('total'))+'</td><td>'+fmt(S3('pre'))+'</td>'+
     '<td><strong>'+fmt(S3('pay'))+'</strong></td>'+
     '<td class="'+(bal<0?'neg':'pos')+'"><strong>'+fmt(bal)+'</strong><div class="sub">各队结转余额合计</div></td>'+
@@ -3383,7 +3397,7 @@ async function perfHandleImport(file){
 function applyDemo(){
   Object.assign(S.w,{
     wellNo:'板深72-H3', team:'70318', wellType:'水平井', block:'板桥', phase:2,
-    footage:4180, cycleDays:90.5, crewStd:38, planDays:86,
+    footage:4180, cycleDays:90.5, assessedCycleDays:84.5, crewStd:38, planDays:86,
     horizLen:2140, displacement:2680, vertDepth:3180, techCasing:3620, keyExpl:false,
     testDays:6.5, coreDays:2, kickDays:3.5, lossDays:10.5, sidetrack:0,
     matAct:108000, elecKwh:430000, dieselTon:5.0, oilTon:1.35,
@@ -3398,7 +3412,7 @@ function applyDemo(){
          {m:'2026-05',team:'70318',foot:1180,proc:9056,cost:0}]
   });
   ['wellNo','footage','cycleDays','planDays','elecKwh','dieselTon','oilTon'].forEach(k=>setSrc(k,'sys'));
-  ['horizLen','displacement','vertDepth','techCasing','testDays','coreDays','kickDays','lossDays','matAct','repairAct','prodWaterAct','sewageM3','accidentCost','grossMargin','revenue','gmAmount']
+  ['horizLen','displacement','vertDepth','techCasing','testDays','coreDays','kickDays','lossDays','matAct','repairAct','prodWaterAct','sewageM3','accidentCost','grossMargin','revenue','gmAmount','assessedCycleDays']
     .forEach(k=>setSrc(k,'man',0.92,'示例数据'));
   const d=diffSuggest(); S.w.difficulty=d.k; setSrc('difficulty','sys');
 }
