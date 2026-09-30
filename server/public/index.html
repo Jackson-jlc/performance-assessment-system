@@ -1139,9 +1139,9 @@ const F = [
     [{k:'oneWellOnePolicy',l:'一井一策（未涵盖区块）',t:'chk'}]
   ]},
   {leg:'工作量与周期', rows:[
-    [{k:'footage',l:'实际进尺（米）',t:'num'},{k:'cycleDays',l:'钻完井周期（天）',t:'num',step:.1}],
-    [{k:'crewStd',l:'定员标准（人）',t:'num'},{k:'planDays',l:'策划周期（天）',t:'num',step:.1}],
-    [{k:'assessedCycleDays',l:'实际考核钻完井周期（天，剔除甲方原因/不可抗力，未填按钻完井周期计）',t:'num',step:.1},{k:'preDays',l:'钻前周期（天，一队多机奖金用）',t:'num',step:.1}],
+    [{k:'footage',l:'实际进尺（米）',t:'num'},{k:'preDays',l:'钻前周期（天，一队多机奖金用）',t:'num',step:.1}],
+    [{k:'cycleDays',l:'钻完井周期（天）',t:'num',step:.1},{k:'assessedCycleDays',l:'实际考核钻完井周期（天，剔除甲方原因/不可抗力，未填按钻完井周期计）',t:'num',step:.1}],
+    [{k:'planDays',l:'策划周期（天）',t:'num',step:.1},{k:'crewStd',l:'定员标准（人）',t:'num'}],
     [{k:'testDays',l:'试油/完井（天）×0.5',t:'num',step:.1},{k:'coreDays',l:'取心（天）×1.0',t:'num',step:.1}],
     [{k:'kickDays',l:'气水侵溢流（天）×0.7',t:'num',step:.1},{k:'lossDays',l:'井漏/事故复杂（天）×0.3',t:'num',step:.1}],
     [{k:'sidetrack',l:'认可侧钻报废进尺（米）',t:'num'},{k:'difficulty',l:'难度系数',t:'num',step:.01}],
