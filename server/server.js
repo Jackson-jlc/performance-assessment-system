@@ -18,7 +18,7 @@ const { seedQuota, seedWells, seedAdmin } = require('./lib/seed');
 const PORT = process.env.PORT || 4000;
 const app = express();
 
-app.use(express.json({ limit: '8mb' })); // 井库全量 PUT 走一个大 JSON，放宽上限
+app.use(express.json({ limit: '50mb' })); // 井库全量 PUT 与备份恢复上传走大 JSON，放宽上限
 app.use((req, res, next) => {
   req.cookies = cookie.parse(req.headers.cookie || '');
   next();
@@ -95,6 +95,87 @@ app.put('/api/quota', auth.requireAuth, (req, res) => {
   if (!q || !Array.isArray(q.blocks)) return res.status(400).json({ error: 'invalid_quota_shape' });
   store.writeJSON('quota', q);
   res.json({ ok: true, blocks: q.blocks.length });
+});
+
+// ================= 数据备份与恢复 =================
+// 快照 = data/ 下全部业务 JSON 打成一个文件，存 server/backups/。账号文件 users 不参与（恢复不改账号，避免把自己锁在门外）。
+const fs = require('fs');
+const BACKUP_DIR = path.join(__dirname, 'backups');
+const BACKUP_SKIP = new Set(['users']);
+const BACKUP_NAME = /^backup-\d{8}-\d{6}(?:-\d+)?\.json$/;
+function pad2(n) { return String(n).padStart(2, '0'); }
+function makeSnapshot(note, by) {
+  const files = {};
+  fs.readdirSync(store.DATA_DIR).forEach(f => {
+    const m = /^([a-zA-Z0-9_-]+)\.json$/.exec(f);   // 只取 <key>.json，跳过 .bak/.tmp/.corrupt
+    if (!m || BACKUP_SKIP.has(m[1])) return;
+    const v = store.readJSON(m[1], undefined);
+    if (v !== undefined) files[m[1]] = v;
+  });
+  return { meta: { createdAt: new Date().toISOString(), note: String(note || '').slice(0, 100), by: by || '' }, files };
+}
+function saveSnapshot(snap) {
+  if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  const d = new Date();
+  const base = 'backup-' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '-' + pad2(d.getHours()) + pad2(d.getMinutes()) + pad2(d.getSeconds());
+  let name = base + '.json', i = 1;
+  while (fs.existsSync(path.join(BACKUP_DIR, name))) name = base + '-' + (i++) + '.json';
+  fs.writeFileSync(path.join(BACKUP_DIR, name), JSON.stringify(snap), 'utf8');
+  return name;
+}
+function validSnapshot(snap) {
+  return snap && typeof snap === 'object' && snap.files && typeof snap.files === 'object' && !Array.isArray(snap.files)
+    && Object.keys(snap.files).every(k => /^[a-zA-Z0-9_-]+$/.test(k));
+}
+function applySnapshot(snap) {
+  const keys = Object.keys(snap.files).filter(k => !BACKUP_SKIP.has(k));
+  keys.forEach(k => store.writeJSON(k, snap.files[k]));
+  return keys;
+}
+app.get('/api/backups', auth.requireAuth, (req, res) => {
+  if (!fs.existsSync(BACKUP_DIR)) return res.json([]);
+  const list = fs.readdirSync(BACKUP_DIR).filter(f => BACKUP_NAME.test(f)).map(f => {
+    const st = fs.statSync(path.join(BACKUP_DIR, f));
+    let meta = {};
+    try { meta = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, f), 'utf8')).meta || {}; } catch (_) {}
+    return { name: f, size: st.size, createdAt: meta.createdAt || st.mtime.toISOString(), note: meta.note || '', by: meta.by || '' };
+  }).sort((a, b) => b.name.localeCompare(a.name));
+  res.json(list);
+});
+app.post('/api/backups', auth.requireAuth, (req, res) => {
+  const name = saveSnapshot(makeSnapshot((req.body || {}).note, req.user.username));
+  res.json({ ok: true, name });
+});
+app.get('/api/backups/:name', auth.requireAuth, (req, res) => {
+  if (!BACKUP_NAME.test(req.params.name)) return res.status(400).json({ error: 'bad_name' });
+  const p = path.join(BACKUP_DIR, req.params.name);
+  if (!fs.existsSync(p)) return res.status(404).json({ error: 'not_found' });
+  res.download(p, req.params.name);
+});
+app.delete('/api/backups/:name', auth.requireAuth, auth.requireAdmin, (req, res) => {
+  if (!BACKUP_NAME.test(req.params.name)) return res.status(400).json({ error: 'bad_name' });
+  const p = path.join(BACKUP_DIR, req.params.name);
+  if (!fs.existsSync(p)) return res.status(404).json({ error: 'not_found' });
+  fs.unlinkSync(p);
+  res.json({ ok: true });
+});
+// 恢复：先自动留一份「恢复前」快照，恢复错了还能退回
+app.post('/api/backups/restore-upload', auth.requireAuth, auth.requireAdmin, (req, res) => {
+  if (!validSnapshot(req.body)) return res.status(400).json({ error: 'invalid_backup_file' });
+  const pre = saveSnapshot(makeSnapshot('恢复前自动备份', req.user.username));
+  const keys = applySnapshot(req.body);
+  res.json({ ok: true, restored: keys, preBackup: pre });
+});
+app.post('/api/backups/:name/restore', auth.requireAuth, auth.requireAdmin, (req, res) => {
+  if (!BACKUP_NAME.test(req.params.name)) return res.status(400).json({ error: 'bad_name' });
+  const p = path.join(BACKUP_DIR, req.params.name);
+  if (!fs.existsSync(p)) return res.status(404).json({ error: 'not_found' });
+  let snap;
+  try { snap = JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return res.status(400).json({ error: 'invalid_backup_file' }); }
+  if (!validSnapshot(snap)) return res.status(400).json({ error: 'invalid_backup_file' });
+  const pre = saveSnapshot(makeSnapshot('恢复前自动备份', req.user.username));
+  const keys = applySnapshot(snap);
+  res.json({ ok: true, restored: keys, preBackup: pre });
 });
 
 // ================= 预兑现台账（兑现登记：井号 × 月份，独立于井库） =================

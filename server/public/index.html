@@ -362,6 +362,7 @@ main.full{padding-bottom:26px}
   <button class="navbtn" data-go="roll"><span class="n">05</span>滚动定额</button>
   <button class="navbtn" data-go="team"><span class="n">06</span>班子绩效</button>
   <button class="navbtn" data-go="tinfo"><span class="n">07</span>队伍信息</button>
+  <button class="navbtn" data-go="bak"><span class="n">08</span>数据备份</button>
   <div class="railfoot">
     依据：2026年经营责任制实施办法 · 附件1 考核标准及相关定额 · 附件2 大港油区单井经营考核办法（试行）· 附件3 钻井队班子绩效考核办法
   </div>
@@ -787,6 +788,33 @@ main.full{padding-bottom:26px}
     </div>
   </div>
 </section>
+
+<!-- ============ 08 数据备份 ============ -->
+<section class="page" id="p-bak">
+  <div class="phead">
+    <div>
+      <h2>数据备份</h2>
+      <p>把井库、定额库、月度填报、预兑现、队伍信息、班子绩效等全部业务数据打成快照保存在服务器上，可随时下载或恢复。账号信息不参与备份与恢复。</p>
+    </div>
+  </div>
+  <div id="bakMsg"></div>
+  <div class="card" style="margin-top:16px">
+    <header><h3>创建与导入</h3><span class="eyebrow">恢复前会自动再留一份当前数据</span></header>
+    <div class="body">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="bakNote" type="text" maxlength="100" placeholder="备注（可选），如：8月底结算前" style="flex:1;min-width:220px">
+        <button class="btn" id="bakCreate" type="button">立即备份</button>
+        <button class="btn ghost" id="bakUpload" type="button">从备份文件恢复…</button>
+        <input type="file" id="bakFile" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <header><h3>备份列表</h3><span class="eyebrow" id="bakCount"></span></header>
+    <div class="body"><div class="scroll"><table id="bakTbl"></table></div></div>
+  </div>
+</section>
+
 
 </main>
 </div>
@@ -4196,6 +4224,59 @@ async function tiHandleImport(file){
   $('#tiImpFile').addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; tiHandleImport(f); });
 })();
 
+/* ============================ 08 数据备份 ============================ */
+function bakMsg(html,cls){ const m=$('#bakMsg'); if(!m) return;
+  m.innerHTML = html ? '<div class="note '+(cls||'')+'" style="margin-bottom:14px">'+html+'</div>' : ''; }
+function bakSize(n){ return n>=1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1,Math.round(n/1024))+' KB'; }
+async function renderBak(){
+  const T=$('#bakTbl'); if(!T) return;
+  if(!BACKEND_MODE){ T.innerHTML='<tbody><tr><td class="l dim" style="font-family:var(--sans)">当前为单机模式（未连接服务器），数据备份需要后端服务。</td></tr></tbody>'; return; }
+  let list=[];
+  try{ const r=await apiFetch('/api/backups'); if(!r.ok) throw new Error('HTTP '+r.status); list=await r.json(); }
+  catch(e){ T.innerHTML='<tbody><tr><td class="l neg" style="font-family:var(--sans)">读取备份列表失败：'+esc(e.message)+'</td></tr></tbody>'; return; }
+  $('#bakCount').textContent='共 '+list.length+' 份';
+  if(!list.length){ T.innerHTML='<tbody><tr><td class="l dim" style="font-family:var(--sans)">还没有备份。点上方「立即备份」创建第一份。</td></tr></tbody>'; return; }
+  T.innerHTML='<thead><tr><th class="l">备份时间</th><th class="l">备注</th><th class="l">操作人</th><th>大小</th><th class="c">操作</th></tr></thead><tbody>'+
+    list.map(b=>'<tr><td class="l">'+esc(new Date(b.createdAt).toLocaleString('zh-CN',{hour12:false}))+'</td>'+
+      '<td class="l">'+esc(b.note||'—')+'</td><td class="l dim">'+esc(b.by||'—')+'</td><td class="dim">'+bakSize(b.size)+'</td>'+
+      '<td class="c" style="white-space:nowrap"><a class="btn ghost mini" href="/api/backups/'+b.name+'" download>下载</a> '+
+      '<button class="btn ghost mini" data-brs="'+b.name+'">恢复</button> '+
+      '<button class="btn ghost mini" data-bdel="'+b.name+'">删除</button></td></tr>').join('')+'</tbody>';
+  T.querySelectorAll('[data-brs]').forEach(b=>b.onclick=()=>bakRestore('/api/backups/'+b.dataset.brs+'/restore',null,b.dataset.brs));
+  T.querySelectorAll('[data-bdel]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('确定删除备份 '+b.dataset.bdel+'？删除后无法找回。')) return;
+    const r=await apiFetch('/api/backups/'+b.dataset.bdel,{method:'DELETE'});
+    if(r.ok){ bakMsg('已删除备份 '+esc(b.dataset.bdel),''); renderBak(); }
+    else bakMsg('删除失败（HTTP '+r.status+(r.status===403?'，仅管理员可操作':'')+'）','err');
+  });
+}
+async function bakRestore(url,body,label){
+  if(!confirm('确定用「'+label+'」覆盖当前全部业务数据？\n\n系统会先自动保存一份当前数据的备份，之后可再次恢复回来。')) return;
+  bakMsg('正在恢复…','');
+  try{
+    const r=await apiFetch(url,{method:'POST',body:JSON.stringify(body||{})});
+    if(!r.ok){ bakMsg('恢复失败：'+(r.status===403?'仅管理员可恢复数据':r.status===400?'备份文件格式不正确':'HTTP '+r.status),'err'); return; }
+    bakMsg('恢复完成，页面即将刷新以载入恢复后的数据…','ok');
+    setTimeout(()=>location.reload(),1200);
+  }catch(e){ bakMsg('恢复失败：'+esc(e.message),'err'); }
+}
+(function(){
+  $('#bakCreate').onclick=async()=>{
+    if(!BACKEND_MODE){ bakMsg('当前为单机模式，无法备份','err'); return; }
+    const r=await apiFetch('/api/backups',{method:'POST',body:JSON.stringify({note:$('#bakNote').value})});
+    if(r.ok){ $('#bakNote').value=''; bakMsg('备份已创建。','ok'); renderBak(); }
+    else bakMsg('备份失败（HTTP '+r.status+'）','err');
+  };
+  $('#bakUpload').onclick=()=>$('#bakFile').click();
+  $('#bakFile').addEventListener('change',e=>{
+    const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ let j; try{ j=JSON.parse(rd.result); }catch(x){ bakMsg('文件不是有效的 JSON 备份','err'); return; }
+      bakRestore('/api/backups/restore-upload',j,f.name); };
+    rd.readAsText(f);
+  });
+})();
+
 /* ============================ 路由与启动 ============================ */
 function go(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on', p.id==='p-'+id));
@@ -4206,6 +4287,7 @@ function go(id){
   if(id==='roll') renderRoll();
   if(id==='team') renderTeam();
   if(id==='tinfo') renderTinfo();
+  if(id==='bak') renderBak();
   window.scrollTo({top:0,behavior:'instant'});
 }
 document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>go(b.dataset.go));
