@@ -937,7 +937,7 @@ const S = {
   prov:{},                                // 字段来源 {src, conf, evidence}
   w:{
     wellNo:'', team:'70318', wellType:'水平井', block:'', phase:2,
-    footage:0, cycleDays:0, assessedCycleDays:0, crewStd:38, planDays:0, difficulty:1,
+    footage:0, cycleDays:0, preDays:0, assessedCycleDays:0, crewStd:38, planDays:0, difficulty:1,
     keyExpl:false, horizLen:0, displacement:0, vertDepth:0, techCasing:0,
     dayrate:false, dayrateRatio:100, winter:false, e2o:false, diesel:true,
     testDays:0, coreDays:0, kickDays:0, lossDays:0, sidetrack:0, waitDays:0,
@@ -1095,8 +1095,9 @@ function calc(wIn){
     else if(gm<gAvg){ gmAmt=-10000*rm; gmNote='低于区块平均指标'; }
     else { gmAmt=0; gmNote='达平均未达 110%'; }
   }
-  // 一队多机（跨区域）奖金 = 50000 × 实际考核周期 ÷ 30
-  const multiRate = 50000, multiAmt = w.multiRig ? multiRate*assessedDays/30 : 0;
+  // 一队多机（跨区域）奖金 = 50000 × （钻前周期 + 实际考核周期）÷ 30
+  const preDays = +w.preDays||0, multiDays = preDays + assessedDays;
+  const multiRate = 50000, multiAmt = w.multiRig ? multiRate*multiDays/30 : 0;
   const specSum = accAmt + spdAmt + gmAmt + multiAmt;
 
   const gross = quotaSum + specSum;
@@ -1110,7 +1111,7 @@ function calc(wIn){
           std,act,stdSum,actSum,saving,costAmt,quotaSum,
           gmRaw,gm,gAvg,g110,g120,
           dieselPrice,waitComp,costAdjust,
-          accAmt,accNote,multiAmt,multiRate,spdAmt,spdRate,spdRm,gmAmt,gmNote,specSum,gross,qDed,dmgDed,dedCap,total};
+          accAmt,accNote,multiAmt,multiRate,multiDays,preDays,spdAmt,spdRate,spdRm,gmAmt,gmNote,specSum,gross,qDed,dmgDed,dedCap,total};
 }
 
 /* 难度系数规则建议 */
@@ -1140,7 +1141,7 @@ const F = [
   {leg:'工作量与周期', rows:[
     [{k:'footage',l:'实际进尺（米）',t:'num'},{k:'cycleDays',l:'钻完井周期（天）',t:'num',step:.1}],
     [{k:'crewStd',l:'定员标准（人）',t:'num'},{k:'planDays',l:'策划周期（天）',t:'num',step:.1}],
-    [{k:'assessedCycleDays',l:'实际考核钻完井周期（天，剔除甲方原因/不可抗力，未填按钻完井周期计）',t:'num',step:.1}],
+    [{k:'assessedCycleDays',l:'实际考核钻完井周期（天，剔除甲方原因/不可抗力，未填按钻完井周期计）',t:'num',step:.1},{k:'preDays',l:'钻前周期（天，一队多机奖金用）',t:'num',step:.1}],
     [{k:'testDays',l:'试油/完井（天）×0.5',t:'num',step:.1},{k:'coreDays',l:'取心（天）×1.0',t:'num',step:.1}],
     [{k:'kickDays',l:'气水侵溢流（天）×0.7',t:'num',step:.1},{k:'lossDays',l:'井漏/事故复杂（天）×0.3',t:'num',step:.1}],
     [{k:'sidetrack',l:'认可侧钻报废进尺（米）',t:'num'},{k:'difficulty',l:'难度系数',t:'num',step:.01}],
@@ -1354,8 +1355,8 @@ function renderResults(){
           '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'（判定与台月均按实际考核周期 '+fmt(c.spdRm,2)+' 台月）</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑥ 单井毛益专项</strong>', c.gAvg!=null?pct(c.gAvg,2):'—', c.gmRaw?pct(c.gm,2):'0（待考核）',
           '<span class="sub">'+c.gmNote+'</span>', '<strong>'+money(c.gmAmt)+'</strong>'],'grp');
-  if(w.multiRig) s+=row(['<strong>一队多机（跨区域）</strong>', fmt(c.multiRate)+' 元/台月', fmt(assessedDays,1)+' 天',
-          '<span class="sub">50000 × 实际考核周期 ÷ 30</span>', '<strong>'+money(c.multiAmt)+'</strong>'],'grp');
+  if(w.multiRig) s+=row(['<strong>一队多机（跨区域）</strong>', fmt(c.multiRate)+' 元/台月', fmt(c.multiDays,1)+' 天',
+          '<span class="sub">50000 × （钻前 '+fmt(c.preDays,1)+' + 考核 '+fmt(assessedDays,1)+'）÷ 30</span>', '<strong>'+money(c.multiAmt)+'</strong>'],'grp');
   s+=row(['<strong>三专项小计</strong>','','','','<strong>'+money(c.specSum)+'</strong>'],'total');
   $('#specTbl3').innerHTML=s+'</tbody>';
 
@@ -1495,7 +1496,7 @@ function buildExportXls(){
   row(20,[xc('④ 事故复杂专项','xTdL'),xt(w.hasAccident?'-10000 元/台月':'+20000 元/台月','xTd'),xt(w.hasAccident?('发生（备查费用 '+fmt(+w.accidentCost||0)+' 元）'):'无','xTd'),xt(c.accNote,'xTdL'),xm(c.accAmt)]);
   row(20,[xc('⑤ 钻井提速专项','xTdL'),xt(c.spdRate+' 元/台月','xTd'),xt(c.assessedDays+' / '+(c.planDays||'—')+' 天','xTd'),xt(c.speedMet?'完成策划目标':'未完成，减半核减','xTd'),xm(c.spdAmt)]);
   row(20,[xc('⑥ 单井毛益专项','xTdL'),xt(gmStd,'xTd'),xt(gmAct,'xTd'),xt(c.gmNote,'xTdL'),xm(c.gmAmt)]);
-  if(w.multiRig) row(20,[xc('一队多机（跨区域）','xTdL'),xt(c.multiRate+' 元/台月','xTd'),xt(c.assessedDays+' 天','xTd'),xt('50000 × 实际考核周期 ÷ 30','xTdL'),xm(c.multiAmt)]);
+  if(w.multiRig) row(20,[xc('一队多机（跨区域）','xTdL'),xt(c.multiRate+' 元/台月','xTd'),xt(c.multiDays+' 天','xTd'),xt('50000 × （钻前 '+c.preDays+' + 考核 '+c.assessedDays+'）÷ 30','xTdL'),xm(c.multiAmt)]);
   row(20,[xc('三专项小计','xSum'),xt('','xSum'),xt('','xSum'),xt('','xSum'),xm(c.specSum,0,'xSumNum')]);
   row(22,[xc('七、本井兑现合计（元）','xSec',4)]);
   row(26,[xc('项目','xTh',3),xc('金额（元）','xTh')]);
@@ -3380,7 +3381,7 @@ function applyDemo(){
          {m:'2026-05',team:'70318',foot:1180,proc:9056,cost:0}]
   });
   ['wellNo','footage','cycleDays','planDays','elecKwh','dieselTon','oilTon'].forEach(k=>setSrc(k,'sys'));
-  ['horizLen','displacement','vertDepth','techCasing','testDays','coreDays','kickDays','lossDays','matAct','repairAct','prodWaterAct','sewageM3','accidentCost','grossMargin','revenue','gmAmount','assessedCycleDays']
+  ['horizLen','displacement','vertDepth','techCasing','testDays','coreDays','kickDays','lossDays','matAct','repairAct','prodWaterAct','sewageM3','accidentCost','grossMargin','revenue','gmAmount','assessedCycleDays','preDays']
     .forEach(k=>setSrc(k,'man',0.92,'示例数据'));
   const d=diffSuggest(); S.w.difficulty=d.k; setSrc('difficulty','sys');
 }
