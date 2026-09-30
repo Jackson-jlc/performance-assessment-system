@@ -550,7 +550,7 @@ main.full{padding-bottom:26px}
   <div class="phead">
     <div>
       <h2>兑现登记</h2>
-      <p>按当月实际进尺与已签证工序预兑现，完井后并入终考核清算，节余与挂账逐井结转。预兑现只与米费、工序挂钩。</p>
+      <p>按月登记各井预兑现金额，完井后并入终考核清算，节余与挂账逐井结转。预兑现金额手动登记，不与米费、工序挂钩。</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span class="eyebrow">查看井</span>
@@ -561,16 +561,14 @@ main.full{padding-bottom:26px}
   <div id="preMsg"></div>
 
   <div class="card" style="margin-top:16px">
-    <header><h3>预兑现登记</h3><span class="eyebrow">独立登记 · 只与米费、工序挂钩</span></header>
+    <header><h3>预兑现登记</h3><span class="eyebrow">独立登记 · 金额手动输入</span></header>
     <div class="body">
       <div id="preForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:0 14px"></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px">
         <button class="btn" id="preAdd" type="button">登记预兑现</button>
-        <span class="sub" id="preRateHint"></span>
       </div>
-      <p class="sub" style="margin:11px 0 0">本表独立登记，不从「单井考核」的参数录入表取数：钻进期间按月据实登记即可，
-        不要求该井已入库。预兑现<b>只计米费绩效与工序绩效</b>，成本节超与三专项须完井后判定，不在此预发。
-        登记过的井号再次登记时，井型、区块、开次、定员、难度系数自动沿用上次，只需填月份、进尺与工序。</p>
+      <p class="sub" style="margin:11px 0 0">本表独立登记，只需填写兑现月份、井号、承担队号与本月预兑现金额。
+        金额由人工据实录入，<b>不与米费、工序挂钩</b>，不要求该井已入库；完井清算时按井号汇总扣回。</p>
     </div>
   </div>
 
@@ -728,7 +726,7 @@ main.full{padding-bottom:26px}
         <button class="btn ghost" id="perfXls" type="button">导出 Excel</button></div></header>
     <div class="body"><div class="scroll"><table id="teamTbl"></table></div>
       <p class="sub" style="margin:10px 0 0">创收 / 进尺 / 毛益额 / 毛益率排名 / 有效利用率由「队伍信息」按年累自动取数；
-        成本考核兑现奖由「兑现登记」按该队当年预兑现额（米费＋工序费）合计自动取数；安全·井控、重大奖罚、党建为下表手动录入。
+        成本考核兑现奖由「兑现登记」按该队当年预兑现额合计自动取数；安全·井控、重大奖罚、党建为下表手动录入。
         计分办法：单项最高者取满分，其余按「该队值 ÷ 最高值 × 满分」折算，毛益额为负按 0 计。</p>
     </div>
   </div>
@@ -914,7 +912,7 @@ const S = {
     matAct:0, elecKwh:0, dieselTon:0, oilTon:0, repairAct:0, prodWaterAct:0, sewageM3:0, geoAct:0,
     costAdjust:0, costNote:'',
     revenue:0, gmAmount:0,
-    hasAccident:false, accidentCost:0, grossMargin:0,
+    hasAccident:false, accidentCost:0, multiRig:false, grossMargin:0,
     qualityDeduct:0, damageDeduct:0,
     oneWellOnePolicy:false, custom:{}
   }
@@ -1046,7 +1044,8 @@ function calc(wIn){
   // 实际考核钻完井周期：剔除甲方原因/不可抗力因素后的周期，未填时按钻完井周期计，用于钻井提速专项判定
   const assessedDays = (+w.assessedCycleDays||0)>0 ? +w.assessedCycleDays : actDays;
   const speedMet = planDays>0 ? assessedDays<=planDays : true;
-  const spdAmt = speedMet ? spdRate*rm : -(spdRate/2)*rm;
+  const spdRm = assessedDays/30;                               // 提速专项台月数按实际考核周期折算，不再用钻完井周期
+  const spdAmt = speedMet ? spdRate*spdRm : -(spdRate/2)*spdRm;
 
   // 毛益率口径：优先「贡献毛益额 ÷ 本井收入」，两者未录入时回退到手工填写的毛益率
   const revIn=+w.revenue||0, gmIn=+w.gmAmount||0;
@@ -1063,7 +1062,9 @@ function calc(wIn){
     else if(gm<gAvg){ gmAmt=-10000*rm; gmNote='低于区块平均指标'; }
     else { gmAmt=0; gmNote='达平均未达 110%'; }
   }
-  const specSum = accAmt + spdAmt + gmAmt;
+  // 一队多机（跨区域）奖金 = 50000 × 实际考核周期 ÷ 30
+  const multiRate = 50000, multiAmt = w.multiRig ? multiRate*assessedDays/30 : 0;
+  const specSum = accAmt + spdAmt + gmAmt + multiAmt;
 
   const gross = quotaSum + specSum;
   const dedCap = Math.abs(gross)*0.3;                       // 井筒质量扣款封顶 30%
@@ -1076,7 +1077,7 @@ function calc(wIn){
           std,act,stdSum,actSum,saving,costAmt,quotaSum,
           gmRaw,gm,gAvg,g110,g120,
           dieselPrice,waitComp,costAdjust,
-          accAmt,accNote,spdAmt,spdRate,gmAmt,gmNote,specSum,gross,qDed,dmgDed,dedCap,total};
+          accAmt,accNote,multiAmt,multiRate,spdAmt,spdRate,spdRm,gmAmt,gmNote,specSum,gross,qDed,dmgDed,dedCap,total};
 }
 
 /* 难度系数规则建议 */
@@ -1130,7 +1131,7 @@ const F = [
      {k:'costNote',l:'调整备注（调整原因）',t:'text'}]
   ]},
   {leg:'专项与扣减', rows:[
-    [{k:'hasAccident',l:'发生事故复杂',t:'chk'},{k:'accidentCost',l:'处理费用（元，备查，不参与核算）',t:'num'}],
+    [{k:'hasAccident',l:'发生事故复杂',t:'chk'},{k:'multiRig',l:'一队多机（跨区域）',t:'chk'},{k:'accidentCost',l:'处理费用（元，备查，不参与核算）',t:'num'}],
     [{k:'grossMargin',l:'单井毛益率（%，已填收入/毛益额时自动推导）',t:'num',step:.01}],
     [{k:'qualityDeduct',l:'井筒质量扣款（元）',t:'num'},{k:'damageDeduct',l:'工具损毁赔偿（元）',t:'num'}]
   ]}
@@ -1317,9 +1318,11 @@ function renderResults(){
           w.hasAccident?'发生（备查费用 '+fmt(w.accidentCost)+' 元）':'无', '<span class="sub">'+c.accNote+'</span>', '<strong>'+money(c.accAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑤ 钻井提速专项</strong>', fmt(c.spdRate)+' 元/台月',
           fmt(assessedDays,1)+' / '+(planDays>0?fmt(planDays,1):'—')+' 天',
-          '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'（按实际考核周期判定）</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
+          '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'（判定与台月均按实际考核周期 '+fmt(c.spdRm,2)+' 台月）</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑥ 单井毛益专项</strong>', c.gAvg!=null?pct(c.gAvg,2):'—', c.gmRaw?pct(c.gm,2):'0（待考核）',
           '<span class="sub">'+c.gmNote+'</span>', '<strong>'+money(c.gmAmt)+'</strong>'],'grp');
+  if(w.multiRig) s+=row(['<strong>一队多机（跨区域）</strong>', fmt(c.multiRate)+' 元/台月', fmt(assessedDays,1)+' 天',
+          '<span class="sub">50000 × 实际考核周期 ÷ 30</span>', '<strong>'+money(c.multiAmt)+'</strong>'],'grp');
   s+=row(['<strong>三专项小计</strong>','','','','<strong>'+money(c.specSum)+'</strong>'],'total');
   $('#specTbl3').innerHTML=s+'</tbody>';
 
@@ -1348,15 +1351,11 @@ function renderResults(){
 /* 只读展示：按井号到预兑现台账里查本井已预兑现，单向取数，不反向写回 */
 function renderPrePanels(cIn){
   const c=cIn||calc(), P=preOfWell(S.w.wellNo);
-  const over=P.footSum-(+S.w.footage||0);
   P.total=c.total; P.rest=c.total-P.paid;
   $('#prePanel').innerHTML= P.rows.length
     ? '<div class="bignum">'+fmt(P.paid)+' <span style="font-size:14px;font-weight:500;color:var(--muted)">元</span></div>'+
       '<div style="margin-top:10px">'+
-      [['已登记月份', P.rows.length+' 个月（'+P.rows.map(e=>e.m.slice(5)).join('、')+'月）'],
-       ['米费绩效累计', fmt(P.mifeiSum)],
-       ['工序绩效累计', fmt(P.procSum)],
-       ['累计登记进尺', fmt(P.footSum)+' m'+(over>0?' <span class="neg">超实际 '+fmt(over)+'</span>':'')]
+      [['已登记月份', P.rows.length+' 个月（'+P.rows.map(e=>e.m.slice(5)).join('、')+'月）']
       ].map(x=>'<div class="kv"><span>'+x[0]+'</span><span>'+x[1]+'</span></div>').join('')+'</div>'
     : '<div class="dim" style="padding:6px 0">本井尚无预兑现记录。到「兑现登记 › 预兑现登记」按井号、月份登记后，此处按井号自动汇总并参与终考核清算。</div>';
 
@@ -1463,6 +1462,7 @@ function buildExportXls(){
   row(20,[xc('④ 事故复杂专项','xTdL'),xt(w.hasAccident?'-10000 元/台月':'+20000 元/台月','xTd'),xt(w.hasAccident?('发生（备查费用 '+fmt(+w.accidentCost||0)+' 元）'):'无','xTd'),xt(c.accNote,'xTdL'),xm(c.accAmt)]);
   row(20,[xc('⑤ 钻井提速专项','xTdL'),xt(c.spdRate+' 元/台月','xTd'),xt(c.assessedDays+' / '+(c.planDays||'—')+' 天','xTd'),xt(c.speedMet?'完成策划目标':'未完成，减半核减','xTd'),xm(c.spdAmt)]);
   row(20,[xc('⑥ 单井毛益专项','xTdL'),xt(gmStd,'xTd'),xt(gmAct,'xTd'),xt(c.gmNote,'xTdL'),xm(c.gmAmt)]);
+  if(w.multiRig) row(20,[xc('一队多机（跨区域）','xTdL'),xt(c.multiRate+' 元/台月','xTd'),xt(c.assessedDays+' 天','xTd'),xt('50000 × 实际考核周期 ÷ 30','xTdL'),xm(c.multiAmt)]);
   row(20,[xc('三专项小计','xSum'),xt('','xSum'),xt('','xSum'),xt('','xSum'),xm(c.specSum,0,'xSumNum')]);
   row(22,[xc('七、本井兑现合计（元）','xSec',4)]);
   row(26,[xc('项目','xTh',3),xc('金额（元）','xTh')]);
@@ -1483,18 +1483,18 @@ function buildExportXls(){
   row(24,[xc('渤海钻探第三钻井公司 企划财务部　　'+dateStr,'xFoot',4)]);
 
   const S2=[], row2=(h,cells)=>S2.push({h:h||20,cells:cells});
-  row2(36,[xc('单井经营考核表 · 预兑现明细（元）','xTitle',5)]);
-  row2(18,[xc('井号：'+(w.wellNo||'')+'　钻井队：'+w.team+'　导出时间：'+nowStr,'xSub',5)]);
-  row2(22,[xc('月度预兑现登记明细','xSec',5)]);
-  row2(26,[xc('兑现月份','xTh'),xc('承担队号','xTh'),xc('当月进尺（米）','xTh'),xc('米费绩效','xTh'),xc('当月工序绩效','xTh'),xc('本月预兑现','xTh')]);
+  row2(36,[xc('单井经营考核表 · 预兑现明细（元）','xTitle',3)]);
+  row2(18,[xc('井号：'+(w.wellNo||'')+'　钻井队：'+w.team+'　导出时间：'+nowStr,'xSub',3)]);
+  row2(22,[xc('月度预兑现登记明细','xSec',3)]);
+  row2(26,[xc('兑现月份','xTh'),xc('承担队号','xTh'),xc('本月预兑现','xTh')]);
   if(P.rows.length){
-    P.rows.forEach(e=>row2(20,[xc(e.m,'xTd'),xc(e.team,'xTd'),xn(+e.p.foot||0,'xNum0'),xm(e.mifei),xm(e.proc),xm(e.paid)]));
-    row2(20,[xc('合计 '+P.rows.length+' 个月','xSum'),xt('','xSum'),xm(P.footSum,0,'xSumNum'),xm(P.mifeiSum,0,'xSumNum'),xm(P.procSum,0,'xSumNum'),xm(P.paid,0,'xSumNum')]);
-    row2(20,[xc('本井已预兑现','xTdL'),xt('','xTd'),xt('','xTd'),xt('','xTd'),xt('','xTd'),xm(P.paid)]);
-    row2(24,[xc('本井终考核应发','xTot'),xt('','xTot'),xt('','xTot'),xt('','xTot'),xt('','xTot'),xm(P.rest,0,P.rest<0?'xTotNeg':'xTotNum')]);
-    if(P.rest<0) row2(20,[xc('说明：预兑现已超出完井考核额，差额转入本队挂账（附件2 七（四））','xTdL',5)]);
+    P.rows.forEach(e=>row2(20,[xc(e.m,'xTd'),xc(e.team,'xTd'),xm(e.paid)]));
+    row2(20,[xc('合计 '+P.rows.length+' 个月','xSum'),xt('','xSum'),xm(P.paid,0,'xSumNum')]);
+    row2(20,[xc('本井已预兑现','xTdL'),xt('','xTd'),xm(P.paid)]);
+    row2(24,[xc('本井终考核应发','xTot'),xt('','xTot'),xm(P.rest,0,P.rest<0?'xTotNeg':'xTotNum')]);
+    if(P.rest<0) row2(20,[xc('说明：预兑现已超出完井考核额，差额转入本队挂账（附件2 七（四））','xTdL',3)]);
   }else{
-    row2(20,[xc('（无预兑现记录）','xTd',5)]);
+    row2(20,[xc('（无预兑现记录）','xTd',3)]);
   }
   row2(24,[xc('渤海钻探第三钻井公司 企划财务部　　'+dateStr,'xFoot',5)]);
 
@@ -1502,7 +1502,7 @@ function buildExportXls(){
     '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
     XLS_STYLES+
     xlsSheet('单井经营考核表',[150,90,90,115,100],S1)+
-    xlsSheet('预兑现明细',[70,75,95,90,105,100],S2)+
+    xlsSheet('预兑现明细',[70,75,100],S2)+
     '</Workbook>';
 }
 
@@ -1658,11 +1658,9 @@ function renderWellActions(){
 /* ============================ 预兑现登记（独立台账） ============================
    与「单井考核」解耦：预兑现发生在钻进期间，那时井还没完井、更没入库，因此不能
    从单井参数录入表取数。本模块自建台账 PRES，一条记录 = 一个（井号，月份）登记，
-   自带计费所需参数（井型/区块/开次/定员/难度），与井库彼此独立。
+   仅含兑现月份、井号、承担队号与手动录入的本月预兑现金额，与井库彼此独立。
    与完成井的衔接只靠井号：完井清算时按井号汇总该井全部预兑现额扣回。
-   计提口径：本月预兑现 = 米费绩效 + 工序绩效
-             米费绩效   = 当月进尺 × 区块米费定额 × 定员人数 × 难度系数
-   成本节超与三专项须完井后判定，不在预兑现中预发。 */
+   本月预兑现金额手动登记，不与米费、工序挂钩。 */
 const PKEY='kh-pre-2026';
 let PRES=(function(){ try{ const r=localStorage.getItem(PKEY); if(r){ const p=JSON.parse(r); if(Array.isArray(p)) return p; } }catch(e){} return null; })();
 function savePres(){ try{ localStorage.setItem(PKEY,JSON.stringify(PRES)); }catch(e){}
@@ -1679,9 +1677,7 @@ function migratePre(){
     w.pre.forEach(x=>{
       if(!x || !x.m) return;
       PRES.push({id:newPreId(), m:x.m, wellNo:w.wellNo||'未命名', team:x.team||w.team,
-        wellType:w.wellType, block:w.block, phase:+w.phase||0,
-        crewStd:+w.crewStd||38, difficulty:Number(w.difficulty)||1,
-        foot:+x.foot||0, proc:+x.proc||0});
+        paid:(+x.foot||0)*preRate({wellType:w.wellType,block:w.block,phase:+w.phase||0,crewStd:+w.crewStd||38,difficulty:Number(w.difficulty)||1})+(+x.proc||0)});
     });
   });
   PRES.sort((a,b)=> a.m.localeCompare(b.m) || String(a.wellNo).localeCompare(String(b.wellNo),'zh'));
@@ -1693,7 +1689,7 @@ function preMsg(html,cls){ const m=$('#preMsg'); if(!m) return;
   m.innerHTML = html ? '<div class="note '+(cls||'')+'" style="margin-bottom:14px">'+html+'</div>' : '';
   msgAutoHide(m,()=>preMsg('')); }
 
-/* 计费单价：元/米（已含定员与难度），区块无米费定额时为 0 */
+/* 仅用于兼容旧记录（含进尺/工序字段、无 paid）：折算为金额 */
 function preRate(p){
   const B=findBlock(p.wellType,p.block,p.phase);
   return (B.mifei||0)*(+p.crewStd||0)*(Number(p.difficulty)||1);
@@ -1705,9 +1701,8 @@ function preDirty(){ PRE_CACHE=null; }
 function preCompute(){
   if(PRE_CACHE) return PRE_CACHE;
   const es=(PRES||[]).map((p,i)=>{
-    const rate=preRate(p), mifei=(+p.foot||0)*rate, proc=+p.proc||0;
-    return {i, id:p.id, p:p, m:p.m, team:p.team, well:p.wellNo||'未命名',
-            rate, mifei, proc, paid:mifei+proc};
+    const paid = p.paid!=null ? (+p.paid||0) : (+p.foot||0)*preRate(p)+(+p.proc||0);
+    return {i, id:p.id, p:p, m:p.m, team:p.team, well:p.wellNo||'未命名', paid};
   }).sort((a,b)=> a.m.localeCompare(b.m) || String(a.well).localeCompare(String(b.well),'zh'));
   const g={};
   es.forEach(e=>{ const k=e.team+'|'+e.m; (g[k]=g[k]||{team:e.team,m:e.m,list:[]}).list.push(e); });
@@ -1727,26 +1722,16 @@ function preOfWell(wellNo){
   const key=String(wellNo==null?'':wellNo).trim(), C=preCompute();
   const rows=key ? C.entries.filter(e=>String(e.well).trim()===key) : [];
   return {rows, tm:C.tm,
-    paid:rows.reduce((s,e)=>s+e.paid,0),
-    mifeiSum:rows.reduce((s,e)=>s+e.mifei,0),
-    procSum:rows.reduce((s,e)=>s+e.proc,0),
-    footSum:rows.reduce((s,e)=>s+(+e.p.foot||0),0)};
+    paid:rows.reduce((s,e)=>s+e.paid,0)};
 }
 
 /* ---------- 登记表单 ---------- */
-const PF={m:'', wellNo:'', team:'70318', wellType:'水平井', block:'', phase:2,
-          crewStd:38, difficulty:1, foot:0, proc:0};
+const PF={m:'', wellNo:'', team:'70318', paid:0};
 const PF_FIELDS=[
   ['m','兑现月份','month'],
   ['wellNo','井号','text'],
   ['team','承担队号','team'],
-  ['wellType','井型','sel',['定向井','水平井','直井']],
-  ['block','区块','blk'],
-  ['phase','开次','sel',[2,3,4]],
-  ['crewStd','定员人数','num',1],
-  ['difficulty','难度系数','num',0.01],
-  ['foot','当月进尺（米）','num',10],
-  ['proc','工序绩效（元）','num',100]
+  ['paid','本月预兑现（元）','num',100]
 ];
 function preMonthOpts(){
   const now=new Date(), out=[];
@@ -1764,72 +1749,45 @@ function renderPreForm(){
     let inp;
     if(f[2]==='num'){
       inp=el('input'); inp.type='number'; inp.step=f[3]; inp.value=PF[f[0]];
-      inp.addEventListener('input',e=>{ PF[f[0]]=parseFloat(e.target.value)||0; preRateHint(); });
+      inp.addEventListener('input',e=>{ PF[f[0]]=parseFloat(e.target.value)||0; });
     } else if(f[2]==='text'){
       inp=el('input'); inp.type='text'; inp.value=PF[f[0]];
       inp.addEventListener('input',e=>{ PF[f[0]]=e.target.value; });
-      inp.addEventListener('change',()=>{ if(preFillFromHistory()) renderPreForm(); preRateHint(); });
-    } else if(f[2]==='blk'){
-      /* 输入框 + 下拉建议：可从定额库已有区块中选，也可手动输入新区块名 */
-      inp=el('input'); inp.type='text'; inp.value=PF[f[0]];
-      inp.placeholder='— 请选择或输入区块 —';
-      const dlId='dl_pf_'+f[0];
-      inp.setAttribute('list', dlId);
-      const dl=el('datalist',null,''); dl.id=dlId;
-      [...new Set((Q.blocks||[]).map(b=>b.block))].sort((a,b)=>String(a).localeCompare(String(b),'zh'))
-        .forEach(o=>{ const op=el('option',null,o); op.value=o; dl.appendChild(op); });
-      d.appendChild(dl);
-      inp.addEventListener('input',e=>{ PF[f[0]]=e.target.value; preRateHint(); });
+      inp.addEventListener('change',()=>{ if(preFillFromHistory()) renderPreForm(); });
     } else {
       inp=el('select');
       const opts = f[2]==='month' ? preMonthOpts()
                  : f[2]==='team'  ? Q.rigs.map(r=>r.team)
                  : f[3];
       opts.forEach(o=>{ const op=el('option',null,o); op.value=o; if(String(o)===String(PF[f[0]])) op.selected=true; inp.appendChild(op); });
-      inp.addEventListener('change',e=>{ PF[f[0]]= f[0]==='phase' ? +e.target.value : e.target.value; preRateHint(); });
+      inp.addEventListener('change',e=>{ PF[f[0]]=e.target.value; });
     }
     d.appendChild(inp); host.appendChild(d);
   });
-  preRateHint();
 }
 /* 同一口井再次登记时沿用上次的计费参数，免得每月重填井型区块 */
 function preFillFromHistory(){
   const key=String(PF.wellNo||'').trim(); if(!key) return false;
   const last=(PRES||[]).filter(x=>String(x.wellNo).trim()===key).slice(-1)[0];
   if(!last) return false;
-  PF.team=last.team; PF.wellType=last.wellType; PF.block=last.block; PF.phase=last.phase;
-  PF.crewStd=last.crewStd; PF.difficulty=last.difficulty;
+  PF.team=last.team;
   return true;
-}
-function preRateHint(){
-  const h=$('#preRateHint'); if(!h) return;
-  const B=findBlock(PF.wellType,PF.block,PF.phase), rate=preRate(PF);
-  if(!PF.block){ h.innerHTML='<span class="dim">选择区块后显示计费单价</span>'; return; }
-  if(!(B.mifei>0)){ h.innerHTML='<span class="neg">「'+PF.wellType+' · '+PF.block+' · '+PF.phase+'开」无米费定额，需先在定额库补位</span>'; return; }
-  h.innerHTML='米费单价 <b>'+fmt(rate,2)+'</b> 元/米（定额 '+B.mifei+' × 定员 '+PF.crewStd+' × 难度 '+PF.difficulty+'）'+
-    '　本月预兑现 <b>'+fmt((+PF.foot||0)*rate+(+PF.proc||0))+'</b> 元';
 }
 function preAddMonth(){
   const wellNo=String(PF.wellNo||'').trim();
   const errs=[];
   if(!wellNo) errs.push('井号不能为空');
   if(!PF.m) errs.push('请选择兑现月份');
-  if(!PF.block) errs.push('请选择区块');
-  else if(!(findBlock(PF.wellType,PF.block,PF.phase).mifei>0))
-    errs.push('「'+PF.wellType+' · '+PF.block+' · '+PF.phase+'开」无米费定额，须先在定额库补位');
-  if(!(+PF.crewStd>0)) errs.push('定员人数必须大于 0');
-  if(!(+PF.foot>0) && !(+PF.proc>0)) errs.push('当月进尺与工序绩效不能同时为 0');
+  if(!(+PF.paid>0)) errs.push('本月预兑现金额必须大于 0');
   if((PRES||[]).some(x=>String(x.wellNo).trim()===wellNo && x.m===PF.m))
     errs.push('「'+wellNo+'」'+PF.m+' 已登记过，请直接在下方明细表内修改');
   if(errs.length){ preMsg('<b>无法登记：</b>'+errs.join('；'),'err'); return; }
 
-  PRES.push({id:newPreId(), m:PF.m, wellNo:wellNo, team:PF.team, wellType:PF.wellType,
-             block:PF.block, phase:+PF.phase||0, crewStd:+PF.crewStd||0,
-             difficulty:Number(PF.difficulty)||1, foot:+PF.foot||0, proc:+PF.proc||0});
+  PRES.push({id:newPreId(), m:PF.m, wellNo:wellNo, team:PF.team, paid:+PF.paid||0});
   PRES.sort((a,b)=> a.m.localeCompare(b.m) || String(a.wellNo).localeCompare(String(b.wellNo),'zh'));
   preDirty(); savePres();
-  const amt=(+PF.foot||0)*preRate(PF)+(+PF.proc||0);
-  PF.foot=0; PF.proc=0;                                  // 进尺与工序逐月不同，登记后清空；其余参数留作下月默认
+  const amt=+PF.paid||0;
+  PF.paid=0;                                             // 金额逐月不同，登记后清空；队号留作下月默认
   PRE_WELL=wellNo;
   preMsg('已为 <b>'+esc(wellNo)+'</b> 登记 '+PF.m+' 预兑现 <b>'+fmt(amt)+'</b> 元（承担队号 '+PF.team+'）。','ok');
   renderPre(); renderPrePanels(); renderWellStore(); renderDash();
@@ -1852,27 +1810,18 @@ function renderPre(){
   if(lab) lab.textContent = PRE_WELL==='__all' ? ('全部 '+rows.length+' 条登记') : (PRE_WELL+' · '+rows.length+' 个月');
   const teams=Q.rigs.map(r=>r.team);
   if(!rows.length){
-    $('#preTbl').innerHTML='<tbody><tr><td class="l dim" style="font-family:var(--sans)">尚无预兑现登记。在上方「预兑现登记」填写井号、月份、区块与当月进尺后点「登记预兑现」。</td></tr></tbody>';
+    $('#preTbl').innerHTML='<tbody><tr><td class="l dim" style="font-family:var(--sans)">尚无预兑现登记。在上方「预兑现登记」填写月份、井号、队号与预兑现金额后点「登记预兑现」。</td></tr></tbody>';
   } else {
     const sum=f=>rows.reduce((a,e)=>a+f(e),0);
     $('#preTbl').innerHTML='<thead><tr><th class="l">兑现月份</th><th class="l">井号</th><th class="l">承担队号</th>'+
-      '<th class="l">井型 · 区块 · 开次</th><th>定员<span class="u">人</span></th><th>难度</th>'+
-      '<th>当月进尺<span class="u">米</span></th><th>米费绩效<span class="u">元</span></th>'+
-      '<th>工序绩效<span class="u">元</span></th><th>本月预兑现<span class="u">元</span></th><th class="c">操作</th></tr></thead><tbody>'+
+      '<th>本月预兑现<span class="u">元</span></th><th class="c">操作</th></tr></thead><tbody>'+
       rows.map(e=>'<tr><td class="l">'+e.m+'</td><td class="l">'+esc(e.well)+'</td>'+
         '<td class="l"><select data-pid="'+e.id+'" data-pf="team">'+teams.map(t=>'<option value="'+t+'"'+(t===e.team?' selected':'')+'>'+t+'</option>').join('')+'</select></td>'+
-        '<td class="l dim">'+e.p.wellType+' · '+esc(e.p.block)+' · '+e.p.phase+'开</td>'+
-        '<td class="dim">'+e.p.crewStd+'</td><td class="dim">'+e.p.difficulty+'</td>'+
-        '<td><input type="number" step="10" data-pid="'+e.id+'" data-pf="foot" value="'+(e.p.foot||0)+'"></td>'+
-        '<td>'+fmt(e.mifei)+'</td>'+
-        '<td><input type="number" step="100" data-pid="'+e.id+'" data-pf="proc" value="'+(e.p.proc||0)+'"></td>'+
-        '<td><strong>'+fmt(e.paid)+'</strong></td>'+
+        '<td><input type="number" step="100" data-pid="'+e.id+'" data-pf="paid" value="'+e.paid+'"></td>'+
         '<td class="c"><button class="btn ghost mini" data-pdel="'+e.id+'">删除</button></td></tr>').join('')+
       '<tr class="total"><td class="l">合计 '+rows.length+' 条</td><td class="l dim">'+
         (PRE_WELL==='__all'? [...new Set(rows.map(e=>e.well))].length+' 口井' : esc(PRE_WELL))+'</td>'+
-        '<td class="l dim">—</td><td class="l dim">—</td><td class="dim">—</td><td class="dim">—</td>'+
-        '<td>'+fmt(sum(e=>+e.p.foot||0))+'</td><td>'+fmt(sum(e=>e.mifei))+'</td>'+
-        '<td>'+fmt(sum(e=>e.proc))+'</td><td><strong>'+fmt(sum(e=>e.paid))+'</strong></td><td class="c dim">—</td></tr></tbody>';
+        '<td class="l dim">—</td><td><strong>'+fmt(sum(e=>e.paid))+'</strong></td><td class="c dim">—</td></tr></tbody>';
     const findP=id=>(PRES||[]).find(x=>x.id===id);
     $('#preTbl').querySelectorAll('input,select').forEach(n=>{
       n.addEventListener(n.tagName==='SELECT'?'change':'input',ev=>{
@@ -1900,18 +1849,8 @@ function renderPre(){
 function refreshPreLive(){
   const C=preCompute(), T=$('#preTbl');
   const rows = PRE_WELL==='__all' ? C.entries : C.entries.filter(e=>String(e.well).trim()===PRE_WELL);
-  rows.forEach((e,ri)=>{
-    const row=T.rows[ri+1]; if(!row) return;
-    row.cells[7].textContent=fmt(e.mifei);
-    row.cells[9].innerHTML='<strong>'+fmt(e.paid)+'</strong>';
-  });
   const tr=T.rows[T.rows.length-1], sum=f=>rows.reduce((a,e)=>a+f(e),0);
-  if(tr){
-    tr.cells[6].textContent=fmt(sum(e=>+e.p.foot||0));
-    tr.cells[7].textContent=fmt(sum(e=>e.mifei));
-    tr.cells[8].textContent=fmt(sum(e=>e.proc));
-    tr.cells[9].innerHTML='<strong>'+fmt(sum(e=>e.paid))+'</strong>';
-  }
+  if(tr) tr.cells[3].innerHTML='<strong>'+fmt(sum(e=>e.paid))+'</strong>';
   renderTeamMonth(C); renderPreSettle(); renderWellSettle();
 }
 
@@ -1936,14 +1875,10 @@ function renderTeamMonth(C){
 function renderPreSettle(){
   const C=preCompute(), n=C.entries.length;
   const paid=C.entries.reduce((s,e)=>s+e.paid,0);
-  const mf=C.entries.reduce((s,e)=>s+e.mifei,0);
-  const pc=C.entries.reduce((s,e)=>s+e.proc,0);
   const wells=[...new Set(C.entries.map(e=>e.well))].length;
   $('#preSettle').innerHTML=
     '<div class="kpis" style="margin-top:14px">'+
-    [['预兑现累计', fmt(paid)+' 元', n+' 条登记 · '+wells+' 口井 · 完井时全额扣回'],
-     ['其中米费绩效', fmt(mf)+' 元', '当月进尺 × 米费定额 × 定员 × 难度系数'],
-     ['其中工序绩效', fmt(pc)+' 元', '已签证工序，按工序定额据实登记']
+    [['预兑现累计', fmt(paid)+' 元', n+' 条登记 · '+wells+' 口井 · 完井时全额扣回']
     ].map(x=>'<div class="kpi"><div class="k">'+x[0]+'</div><div class="v">'+x[1]+'</div><div class="d">'+x[2]+'</div></div>').join('')+
     '</div>';
 }
@@ -3026,7 +2961,7 @@ function renderQuota(){
 /* ============================ 05 班子绩效（附件3：大港油区钻井队班子绩效考核办法） ============================
    适用范围：仅大港油区钻井队（不含机关）。
    取数：市场创收 / 钻井进尺 / 贡献毛益额 / 毛益率排名 / 有效钻机利用率 —— 由「队伍信息」按年累自动汇总；
-         成本考核兑现奖 —— 由「兑现登记」台账按队按年汇总预兑现额（米费＋工序费）；
+         成本考核兑现奖 —— 由「兑现登记」台账按队按年汇总预兑现额；
          安全·井控 / 重大奖罚 / 党建四项 —— 本页手动录入，存 server\data\perf.json。
    计分：主要指标各取「该队值 ÷ 全队最高值 × 满分」（创收25 进尺15 成本15 毛益额30，合计 85 = 经营类权重）；
          辅助指标为加减分（安全井控扣分、毛益率排名前三 +10/+6/+3、重大奖罚 ±1~5）；党建 15 分单列。
