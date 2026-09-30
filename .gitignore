@@ -3,3 +3,4 @@ server/.env
 # store.js 的原子写临时文件与损坏备份
 server/data/*.json.tmp-*
 server/data/*.corrupt-*
+server/backups/
