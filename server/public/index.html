@@ -1888,22 +1888,34 @@ function refreshPreLive(){
   renderTeamMonth(C); renderPreSettle(); renderWellSettle();
 }
 
-/* 按（队号 × 月份）汇总——这是实际发放口径 */
+/* 按（队号 × 月份）汇总——这是实际发放口径；兑现月份 / 队号 / 在钻井号三列表头带筛选下拉 */
+const TMF={m:'',team:'',well:''};
 function renderTeamMonth(C){
   const T=$('#teamMonthTbl'); if(!T) return;
-  const rows=(C||preCompute()).tm;
-  if(!rows.length){ T.innerHTML='<tbody><tr><td class="l dim" style="font-family:var(--sans)">暂无数据。登记预兑现后，此处按「队号 × 月份」合并当月实际应发。</td></tr></tbody>'; return; }
+  const all=(C||preCompute()).tm;
+  if(!all.length){ T.innerHTML='<tbody><tr><td class="l dim" style="font-family:var(--sans)">暂无数据。登记预兑现后，此处按「队号 × 月份」合并当月实际应发。</td></tr></tbody>'; return; }
+  const uniq=f=>[...new Set(all.flatMap(f))].sort((a,b)=>String(a).localeCompare(String(b),'zh'));
+  const opts={m:uniq(r=>[r.m]), team:uniq(r=>[r.team]), well:uniq(r=>r.wells)};
+  ['m','team','well'].forEach(k=>{ if(TMF[k] && !opts[k].includes(TMF[k])) TMF[k]=''; });   // 选项已不存在（如记录被删）则自动清除
+  const rows=all.filter(r=>(!TMF.m||r.m===TMF.m)&&(!TMF.team||r.team===TMF.team)&&(!TMF.well||r.wells.includes(TMF.well)));
+  const sel=k=>'<select class="tmf" data-tmf="'+k+'" style="max-width:130px;font-size:12px"><option value="">全部</option>'+
+    opts[k].map(o=>'<option value="'+esc(o)+'"'+(TMF[k]===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';
   const S4=f=>rows.reduce((a,r)=>a+r[f],0);
   const wn=new Set(); rows.forEach(r=>r.wells.forEach(x=>wn.add(x)));
+  const filtered=TMF.m||TMF.team||TMF.well;
   T.innerHTML='<thead><tr><th class="l">兑现月份</th><th class="l">队号</th><th class="l">在钻井号</th>'+
-    '<th>井数<span class="u">口</span></th><th>当月应发<span class="u">元</span></th></tr></thead><tbody>'+
-    rows.map(r=>'<tr><td class="l">'+r.m+'</td><td class="l">'+r.team+'</td>'+
+    '<th>井数<span class="u">口</span></th><th>当月应发<span class="u">元</span></th></tr>'+
+    '<tr><th class="l">'+sel('m')+'</th><th class="l">'+sel('team')+'</th><th class="l">'+sel('well')+'</th><th></th><th></th></tr></thead><tbody>'+
+    (rows.length ? rows.map(r=>'<tr><td class="l">'+r.m+'</td><td class="l">'+r.team+'</td>'+
       '<td class="l">'+r.wells.map(esc).join('、')+'</td>'+
       '<td class="dim">'+r.wells.length+'</td>'+
-      '<td><strong>'+fmt(r.paid)+'</strong></td></tr>').join('')+
-    '<tr class="total"><td class="l">合计 '+rows.length+' 个队·月</td><td class="l dim">—</td>'+
+      '<td><strong>'+fmt(r.paid)+'</strong></td></tr>').join('')
+    : '<tr><td class="l dim" colspan="5" style="font-family:var(--sans)">没有符合筛选条件的记录。</td></tr>')+
+    '<tr class="total"><td class="l">合计 '+rows.length+' 个队·月'+(filtered?'<div class="sub">已筛选，共 '+all.length+' 个</div>':'')+'</td><td class="l dim">—</td>'+
     '<td class="l dim">—</td><td class="dim">'+wn.size+'<div class="sub">去重</div></td>'+
     '<td><strong>'+fmt(S4('paid'))+'</strong></td></tr></tbody>';
+  T.querySelectorAll('select.tmf').forEach(n=>n.addEventListener('change',e=>{
+    TMF[e.target.dataset.tmf]=e.target.value; renderTeamMonth(); }));
 }
 
 function renderPreSettle(){
