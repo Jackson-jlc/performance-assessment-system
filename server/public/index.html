@@ -947,7 +947,7 @@ const S = {
     matAct:0, elecKwh:0, dieselTon:0, oilTon:0, repairAct:0, prodWaterAct:0, sewageM3:0, geoAct:0,
     costAdjust:0, costNote:'',
     revenue:0, gmAmount:0,
-    hasAccident:false, honorAward:0, multiRig:false, grossMargin:0,
+    hasAccident:false, accNotes:[], honorAward:0, multiRig:false, grossMargin:0,
     qualityDeduct:0, damageDeduct:0,
     oneWellOnePolicy:false, custom:{}
   }
@@ -1169,7 +1169,8 @@ const F = [
      {k:'costNote',l:'调整备注（调整原因）',t:'text'}]
   ]},
   {leg:'专项与扣减', rows:[
-    [{k:'hasAccident',l:'发生事故复杂',t:'chk'},{k:'multiRig',l:'一队多机（跨区域）',t:'chk'},{k:'honorAward',l:'特殊荣誉奖（元）',t:'num'}],
+    [{k:'hasAccident',l:'发生事故复杂',t:'chk'}],
+    [{k:'multiRig',l:'一队多机（跨区域）',t:'chk'},{k:'honorAward',l:'特殊荣誉奖（元）',t:'num'}],
     [{k:'grossMargin',l:'单井毛益率（%，已填收入/毛益额时自动推导）',t:'num',step:.01}],
     [{k:'qualityDeduct',l:'井筒质量扣款（元）',t:'num'},{k:'damageDeduct',l:'工具损毁赔偿（元）',t:'num'}]
   ]}
@@ -1218,6 +1219,20 @@ function field(f){
   return d;
 }
 
+function accNoteBox(){
+      if(!Array.isArray(S.w.accNotes)) S.w.accNotes=[];
+      if(!S.w.accNotes.length) S.w.accNotes.push('');
+      const box=el('div'); box.style.cssText='margin-top:10px;overflow-x:auto';
+      box.innerHTML='<table><thead><tr><th style="width:56px">序号</th><th>事故复杂备注</th><th style="width:70px">操作</th></tr></thead><tbody>'+
+        S.w.accNotes.map((t,i)=>'<tr><td>'+(i+1)+'</td><td><input type="text" data-i="'+i+'" value="'+esc(t)+'" placeholder="填写事故复杂情况（时间、类型、损失等）" style="text-align:left;width:100%;margin:0"></td>'+
+        '<td><button class="btn ghost mini" data-del="'+i+'">删除</button></td></tr>').join('')+'</tbody></table>';
+      box.querySelectorAll('input[data-i]').forEach(inp=>inp.addEventListener('input',e=>{ S.w.accNotes[+e.target.dataset.i]=e.target.value; renderResults(); }));
+      box.querySelectorAll('button[data-del]').forEach(b=>b.addEventListener('click',()=>{ S.w.accNotes.splice(+b.dataset.del,1); render(); }));
+      const add=el('button','btn ghost mini','＋ 增加一行'); add.style.marginTop='8px';
+      add.addEventListener('click',()=>{ S.w.accNotes.push(''); render(); });
+      box.appendChild(add); return box;
+}
+
 function renderForm(){
   const host=$('#wellForm'); host.innerHTML='';
   F.forEach(g=>{
@@ -1226,6 +1241,7 @@ function renderForm(){
       const wrap=el('div', r.length===3?'f3':(r.length===2?'f2':''));
       r.forEach(f=>wrap.appendChild(field(f)));
       fs.appendChild(wrap);
+      if(r.length===1 && r[0].k==='hasAccident' && S.w.hasAccident) fs.appendChild(accNoteBox());
     });
     host.appendChild(fs);
   });
@@ -1353,7 +1369,7 @@ function renderResults(){
   /* ---- 三专项 ---- */
   let s='<thead><tr><th>专项</th><th>标准</th><th>实际</th><th>判定</th><th>兑现（元）</th></tr></thead><tbody>';
   s+=row(['<strong>④ 事故复杂专项</strong>', w.hasAccident?'-10,000 元/台月':'+20,000 元/台月',
-          w.hasAccident?'发生':'无', '<span class="sub">'+c.accNote+'</span>', '<strong>'+money(c.accAmt)+'</strong>'],'grp');
+          w.hasAccident?'发生':'无', '<span class="sub">'+c.accNote+(w.hasAccident&&(w.accNotes||[]).some(x=>String(x).trim())?'<br>备注：'+w.accNotes.filter(x=>String(x).trim()).map(esc).join('；'):'')+'</span>', '<strong>'+money(c.accAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑤ 钻井提速专项</strong>', fmt(c.spdRate)+' 元/台月',
           fmt(assessedDays,1)+' / '+(planDays>0?fmt(planDays,1):'—')+' 天',
           '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'（判定与台月均按实际考核周期 '+fmt(c.spdRm,2)+' 台月）</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
@@ -1499,6 +1515,8 @@ function buildExportXls(){
   row(22,[xc('六、三专项情况（兑现·元）','xSec',4)]);
   row(26,[xc('专项项目','xTh'),xc('考核标准','xTh'),xc('实际','xTh'),xc('判定','xTh'),xc('兑现（元）','xTh')]);
   row(20,[xc('④ 事故复杂专项','xTdL'),xt(w.hasAccident?'-10000 元/台月':'+20000 元/台月','xTd'),xt(w.hasAccident?'发生':'无','xTd'),xt(c.accNote,'xTdL'),xm(c.accAmt)]);
+  if(w.hasAccident) (w.accNotes||[]).map(x=>String(x).trim()).filter(Boolean).forEach((t,i)=>
+    row(20,[xc('　事故复杂备注 '+(i+1),'xTdL'),xt(t,'xTdL',3)]));
   row(20,[xc('⑤ 钻井提速专项','xTdL'),xt(c.spdRate+' 元/台月','xTd'),xt(c.assessedDays+' / '+(c.planDays||'—')+' 天','xTd'),xt(c.speedMet?'完成策划目标':'未完成，减半核减','xTd'),xm(c.spdAmt)]);
   row(20,[xc('⑥ 单井毛益专项','xTdL'),xt(gmStd,'xTd'),xt(gmAct,'xTd'),xt(c.gmNote,'xTdL'),xm(c.gmAmt)]);
   if(w.multiRig) row(20,[xc('一队多机（跨区域）','xTdL'),xt(c.multiRate+' 元/台月','xTd'),xt(c.multiDays+' 天','xTd'),xt('50000 × （钻前 '+c.preDays+' + 考核 '+c.assessedDays+'）÷ 30','xTdL'),xm(c.multiAmt)]);
