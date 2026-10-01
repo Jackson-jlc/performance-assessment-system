@@ -109,6 +109,7 @@ main{padding:26px 32px 80px;min-width:0}
 @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .phead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:0 20px 16px 0;
   border-bottom:1px solid var(--line-2);margin-bottom:22px}
+.phead{position:sticky;top:0;z-index:30;background:var(--ground);margin-top:-26px;padding-top:26px}   /* 滚动时标题栏固定在页面顶部；负边距吃掉 main 的上内边距，避免顶部露缝 */
 .phead h2{font-size:26px;letter-spacing:-.024em;line-height:1.2}
 .phead p{margin:7px 0 0;color:var(--muted);max-width:64ch;font-size:13px}
 
@@ -323,7 +324,8 @@ main.full{padding-bottom:26px}
   .wellsplit.hide-form>.wellcol:first-child{display:none;transform:none;width:auto}
   .wellsplit.hide-view{grid-template-columns:minmax(0,1fr)}
   .wellsplit.hide-view>.wellcol:last-child{display:none;transform:none;width:auto}
-  .wellcol{overflow:visible;padding:0}#storeCard .foldbody{max-height:none}}
+  .wellcol{overflow:visible;padding:0}#storeCard .foldbody{max-height:none}
+  .wellhead{top:var(--phH,68px)}}   /* 窄屏整页滚动：单井考核栏吸附在吸顶标题栏下方 */
 @media (max-width:820px){
   .app,.app.nav-hidden{grid-template-columns:1fr}
   .rail{width:auto;position:static;height:auto;flex-direction:row;overflow-x:auto;align-items:center;padding:9px;gap:4px;
@@ -331,7 +333,7 @@ main.full{padding-bottom:26px}
   .app.nav-hidden .rail{display:none;transform:none}
   .brand,.railfoot{display:none}
   .menubtn{top:13px}
-  .phead{padding-right:0}
+  .phead{padding-right:0;margin-top:-18px;padding-top:18px}
   .phead h2{font-size:23px}
   .phead>div{flex-wrap:wrap;max-width:100%;min-width:0}
   .seg{max-width:100%;overflow-x:auto}
@@ -945,7 +947,7 @@ const S = {
     matAct:0, elecKwh:0, dieselTon:0, oilTon:0, repairAct:0, prodWaterAct:0, sewageM3:0, geoAct:0,
     costAdjust:0, costNote:'',
     revenue:0, gmAmount:0,
-    hasAccident:false, accidentCost:0, multiRig:false, grossMargin:0,
+    hasAccident:false, honorAward:0, multiRig:false, grossMargin:0,
     qualityDeduct:0, damageDeduct:0,
     oneWellOnePolicy:false, custom:{}
   }
@@ -1064,7 +1066,8 @@ function calc(wIn){
   const dieselPrice = E2O_DIESEL_PRICE;                        // 柴油当量单价（折合电度数），不再区分是否电代油
   const waitComp = 0.2 * dieselPrice * (+w.waitDays||0);
 
-  const quotaSum = procSum + mifeiAmt + costAmt + waitComp;
+  const costTotal = costAmt + waitComp;                         // 成本定额兑现累计 = 节超兑现 + 等停能耗补偿
+  const quotaSum = procSum + mifeiAmt + costTotal;
 
   // —— 三专项 ——
   const rm = (+w.cycleDays||0)/30;
@@ -1098,7 +1101,8 @@ function calc(wIn){
   // 一队多机（跨区域）奖金 = 50000 × （钻前周期 + 实际考核周期）÷ 30
   const preDays = +w.preDays||0, multiDays = preDays + assessedDays;
   const multiRate = 50000, multiAmt = w.multiRig ? multiRate*multiDays/30 : 0;
-  const specSum = accAmt + spdAmt + gmAmt + multiAmt;
+  const honorAmt = +w.honorAward||0;                           // 特殊荣誉奖：手工录入金额，直接计入三专项
+  const specSum = accAmt + spdAmt + gmAmt + multiAmt + honorAmt;
 
   const gross = quotaSum + specSum;
   const dedCap = Math.abs(gross)*0.3;                       // 井筒质量扣款封顶 30%
@@ -1108,10 +1112,10 @@ function calc(wIn){
 
   return {B,R,big70,K,dayK,convDays,convFoot,convTest,convCore,convKick,convLoss,footEval,procRows,procSum,mifei,mifeiAmt,speedMet,actDays,assessedDays,planDays,
           normalMeters,energyMeters,otherMeters,winterEnergyK,
-          std,act,stdSum,actSum,saving,costAmt,quotaSum,
+          std,act,stdSum,actSum,saving,costAmt,costTotal,quotaSum,
           gmRaw,gm,gAvg,g110,g120,
           dieselPrice,waitComp,costAdjust,
-          accAmt,accNote,multiAmt,multiRate,multiDays,preDays,spdAmt,spdRate,spdRm,gmAmt,gmNote,specSum,gross,qDed,dmgDed,dedCap,total};
+          accAmt,accNote,honorAmt,multiAmt,multiRate,multiDays,preDays,spdAmt,spdRate,spdRm,gmAmt,gmNote,specSum,gross,qDed,dmgDed,dedCap,total};
 }
 
 /* 难度系数规则建议 */
@@ -1165,7 +1169,7 @@ const F = [
      {k:'costNote',l:'调整备注（调整原因）',t:'text'}]
   ]},
   {leg:'专项与扣减', rows:[
-    [{k:'hasAccident',l:'发生事故复杂',t:'chk'},{k:'multiRig',l:'一队多机（跨区域）',t:'chk'},{k:'accidentCost',l:'处理费用（元，备查，不参与核算）',t:'num'}],
+    [{k:'hasAccident',l:'发生事故复杂',t:'chk'},{k:'multiRig',l:'一队多机（跨区域）',t:'chk'},{k:'honorAward',l:'特殊荣誉奖（元）',t:'num'}],
     [{k:'grossMargin',l:'单井毛益率（%，已填收入/毛益额时自动推导）',t:'num',step:.01}],
     [{k:'qualityDeduct',l:'井筒质量扣款（元）',t:'num'},{k:'damageDeduct',l:'工具损毁赔偿（元）',t:'num'}]
   ]}
@@ -1335,8 +1339,8 @@ function renderResults(){
   h+=row(['<span class="sub">米费定额 × 考核进尺 × 定员 × 难度 × 日费系数</span>',
           (c.mifei?c.mifei.toFixed(6):'<span class="neg">无定额</span>'),
           fmt(c.footEval)+' m', w.crewStd+'人 × '+c.K+' × '+c.dayK, fmt(c.mifeiAmt)]);
-  h+=row(['<strong>③ 成本定额</strong>', fmt(c.stdSum), fmt(c.actSum), money(c.saving), '<strong>'+fmt(c.costAmt)+'</strong>'],'grp');
-  h+=row(['<span class="sub">核算当量米（折算进尺口径）：网电 '+fmt(c.energyMeters)+' m（试油/完井折算×40% 取心折算×60% 气水侵溢流/井漏折算×30%）· 其它成本 '+fmt(c.otherMeters)+' m（试油/完井、气水侵溢流、井漏折算×20% 取心折算×60%）'+(c.winterEnergyK>1?' · 冬季柴油上浮10%':'')+'</span>','','','','']);
+  h+=row(['<strong>③ 成本定额</strong>', fmt(c.stdSum), fmt(c.actSum), money(c.saving), '<strong>'+fmt(c.costTotal)+'</strong>'],'grp');
+  h+='<tr><td colspan="5" style="white-space:normal;text-align:left;line-height:1.6"><span class="sub">核算当量米（折算进尺口径）：网电 '+fmt(c.energyMeters)+' m（试油/完井折算×40% 取心折算×60% 气水侵溢流/井漏折算×30%）· 其它成本 '+fmt(c.otherMeters)+' m（试油/完井、气水侵溢流、井漏折算×20% 取心折算×60%）'+(c.winterEnergyK>1?' · 冬季柴油上浮10%':'')+'</span></td></tr>';
   COST_KEYS.forEach(k=>{ const d=c.std[k]-c.act[k];
     h+=row(['<span class="sub">'+COST_LABEL[k]+'</span>', fmt(c.std[k]), fmt(c.act[k]), money(d), '<span class="dim">'+fmt(d*0.8)+'</span>']); });
   if(c.waitComp>0) h+=row(['<span class="sub">等停能耗补偿（'+fmt(w.waitDays,1)+' 天 × 0.2 吨/天 × '+fmt(c.dieselPrice,0)+' 元/吨）</span>', fmt(c.waitComp), '0', money(c.waitComp), '<span class="dim">'+fmt(c.waitComp)+'</span>']);
@@ -1349,7 +1353,7 @@ function renderResults(){
   /* ---- 三专项 ---- */
   let s='<thead><tr><th>专项</th><th>标准</th><th>实际</th><th>判定</th><th>兑现（元）</th></tr></thead><tbody>';
   s+=row(['<strong>④ 事故复杂专项</strong>', w.hasAccident?'-10,000 元/台月':'+20,000 元/台月',
-          w.hasAccident?'发生（备查费用 '+fmt(w.accidentCost)+' 元）':'无', '<span class="sub">'+c.accNote+'</span>', '<strong>'+money(c.accAmt)+'</strong>'],'grp');
+          w.hasAccident?'发生':'无', '<span class="sub">'+c.accNote+'</span>', '<strong>'+money(c.accAmt)+'</strong>'],'grp');
   s+=row(['<strong>⑤ 钻井提速专项</strong>', fmt(c.spdRate)+' 元/台月',
           fmt(assessedDays,1)+' / '+(planDays>0?fmt(planDays,1):'—')+' 天',
           '<span class="sub">'+(c.speedMet?'完成策划目标':'未完成，减半核减')+'（判定与台月均按实际考核周期 '+fmt(c.spdRm,2)+' 台月）</span>', '<strong>'+money(c.spdAmt)+'</strong>'],'grp');
@@ -1357,6 +1361,7 @@ function renderResults(){
           '<span class="sub">'+c.gmNote+'</span>', '<strong>'+money(c.gmAmt)+'</strong>'],'grp');
   if(w.multiRig) s+=row(['<strong>一队多机（跨区域）</strong>', fmt(c.multiRate)+' 元/台月', fmt(c.multiDays,1)+' 天',
           '<span class="sub">50000 × （钻前 '+fmt(c.preDays,1)+' + 考核 '+fmt(assessedDays,1)+'）÷ 30</span>', '<strong>'+money(c.multiAmt)+'</strong>'],'grp');
+  if(c.honorAmt) s+=row(['<strong>特殊荣誉奖</strong>','','','<span class="sub">手工录入，计入三专项</span>','<strong>'+money(c.honorAmt)+'</strong>'],'grp');
   s+=row(['<strong>三专项小计</strong>','','','','<strong>'+money(c.specSum)+'</strong>'],'total');
   $('#specTbl3').innerHTML=s+'</tbody>';
 
@@ -1486,17 +1491,18 @@ function buildExportXls(){
   row(20,[xc('① 工序定额','xTdL'),xt('','xTd'),xt('','xTd'),xt('','xTd'),xm(c.procSum)]);
   c.procRows.forEach(p=>row(20,[xc('　'+p.name,'xTdL'),xn(p.base,'xNum'),xt(p.qty+' '+p.unit.replace('元/',''),'xTd'),xt('','xTd'),xm(p.amt)]));
   row(20,[xc('② 米费定额','xTdL'),xn(c.mifei||0,'xNum'),xn(c.footEval,'xNum'),xt((+w.crewStd||0)+'人 × '+c.K+' × '+c.dayK,'xTd'),xm(c.mifeiAmt)]);
-  row(20,[xc('③ 成本定额','xTdL'),xn(c.stdSum,'xNum'),xn(c.actSum,'xNum'),xn(c.saving,'xNum'),xm(c.costAmt)]);
+  row(20,[xc('③ 成本定额','xTdL'),xn(c.stdSum,'xNum'),xn(c.actSum,'xNum'),xn(c.saving,'xNum'),xm(c.costTotal)]);
   COST_KEYS.forEach(k=>row(20,[xc('　'+COST_LABEL[k],'xTdL'),xn(c.std[k],'xNum'),xn(c.act[k],'xNum'),xn(c.std[k]-c.act[k],'xNum'),xm((c.std[k]-c.act[k])*0.8)]));
   if((c.waitComp||0)>0) row(20,[xc('　等停能耗补偿','xTdL'),xt((c.dieselPrice*0.2)+' 元/吨·天','xTd'),xt((+w.waitDays||0)+' 天','xTd'),xn(c.waitComp,'xNum'),xm(c.waitComp)]);
   if(c.costAdjust) row(20,[xc('　实际消耗调整（±）'+(String(w.costNote||'').trim()?'：'+w.costNote:''),'xTdL'),xt('','xTd'),xn(c.costAdjust,'xNum'),xn(-c.costAdjust,'xNum'),xm(-c.costAdjust*0.8)]);
   row(20,[xc('三定额小计','xSum'),xt('','xSum'),xt('','xSum'),xt('','xSum'),xm(c.quotaSum,0,'xSumNum')]);
   row(22,[xc('六、三专项情况（兑现·元）','xSec',4)]);
   row(26,[xc('专项项目','xTh'),xc('考核标准','xTh'),xc('实际','xTh'),xc('判定','xTh'),xc('兑现（元）','xTh')]);
-  row(20,[xc('④ 事故复杂专项','xTdL'),xt(w.hasAccident?'-10000 元/台月':'+20000 元/台月','xTd'),xt(w.hasAccident?('发生（备查费用 '+fmt(+w.accidentCost||0)+' 元）'):'无','xTd'),xt(c.accNote,'xTdL'),xm(c.accAmt)]);
+  row(20,[xc('④ 事故复杂专项','xTdL'),xt(w.hasAccident?'-10000 元/台月':'+20000 元/台月','xTd'),xt(w.hasAccident?'发生':'无','xTd'),xt(c.accNote,'xTdL'),xm(c.accAmt)]);
   row(20,[xc('⑤ 钻井提速专项','xTdL'),xt(c.spdRate+' 元/台月','xTd'),xt(c.assessedDays+' / '+(c.planDays||'—')+' 天','xTd'),xt(c.speedMet?'完成策划目标':'未完成，减半核减','xTd'),xm(c.spdAmt)]);
   row(20,[xc('⑥ 单井毛益专项','xTdL'),xt(gmStd,'xTd'),xt(gmAct,'xTd'),xt(c.gmNote,'xTdL'),xm(c.gmAmt)]);
   if(w.multiRig) row(20,[xc('一队多机（跨区域）','xTdL'),xt(c.multiRate+' 元/台月','xTd'),xt(c.multiDays+' 天','xTd'),xt('50000 × （钻前 '+c.preDays+' + 考核 '+c.assessedDays+'）÷ 30','xTdL'),xm(c.multiAmt)]);
+  if(c.honorAmt) row(20,[xc('特殊荣誉奖','xTdL'),xt('','xTd'),xt('','xTd'),xt('手工录入，计入三专项','xTdL'),xm(c.honorAmt)]);
   row(20,[xc('三专项小计','xSum'),xt('','xSum'),xt('','xSum'),xt('','xSum'),xm(c.specSum,0,'xSumNum')]);
   row(22,[xc('七、本井兑现合计（元）','xSec',4)]);
   row(26,[xc('项目','xTh',3),xc('金额（元）','xTh')]);
@@ -3385,7 +3391,7 @@ function applyDemo(){
     repairAct:5000, prodWaterAct:23000, sewageM3:118, geoAct:12546,
     geoMove:true, geoShift:false, winter:false, e2o:false, diesel:true,
     revenue:9860000, gmAmount:1893120,
-    hasAccident:true, accidentCost:186400, grossMargin:19.2,
+    hasAccident:true, grossMargin:19.2,
     qualityDeduct:0, damageDeduct:0,
     proc:{0:1,4:1,6:1,7:1,8:1,9:1},
     pre:[{m:'2026-03',team:'70318',foot:1200,proc:30792,cost:0},
@@ -3393,7 +3399,7 @@ function applyDemo(){
          {m:'2026-05',team:'70318',foot:1180,proc:9056,cost:0}]
   });
   ['wellNo','footage','cycleDays','planDays','elecKwh','dieselTon','oilTon'].forEach(k=>setSrc(k,'sys'));
-  ['horizLen','displacement','vertDepth','techCasing','testDays','coreDays','kickDays','lossDays','matAct','repairAct','prodWaterAct','sewageM3','accidentCost','grossMargin','revenue','gmAmount','assessedCycleDays','preDays']
+  ['horizLen','displacement','vertDepth','techCasing','testDays','coreDays','kickDays','lossDays','matAct','repairAct','prodWaterAct','sewageM3','honorAward','grossMargin','revenue','gmAmount','assessedCycleDays','preDays']
     .forEach(k=>setSrc(k,'man',0.92,'示例数据'));
   const d=diffSuggest(); S.w.difficulty=d.k; setSrc('difficulty','sys');
 }
@@ -4320,6 +4326,8 @@ async function exportDashPdf(){
 $('#dashPdf').onclick=exportDashPdf;
 
 /* ============================ 路由与启动 ============================ */
+function syncPhH(){ const ph=document.querySelector('#p-well .phead'); if(ph&&ph.offsetHeight) document.documentElement.style.setProperty('--phH',(ph.offsetHeight-1)+'px'); }
+window.addEventListener('resize',syncPhH);
 function go(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on', p.id==='p-'+id));
   document.querySelectorAll('.navbtn').forEach(b=>b.setAttribute('aria-current', b.dataset.go===id));
@@ -4330,6 +4338,7 @@ function go(id){
   if(id==='team') renderTeam();
   if(id==='tinfo') renderTinfo();
   if(id==='bak') renderBak();
+  if(id==='well') requestAnimationFrame(syncPhH);
   window.scrollTo({top:0,behavior:'instant'});
 }
 document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>go(b.dataset.go));
